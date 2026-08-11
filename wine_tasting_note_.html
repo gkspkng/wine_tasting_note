@@ -160,7 +160,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>ワイン・テイスティングノート<span class="version">v.1.0.2</span></h1>
+  <h1>ワイン・テイスティングノート<span class="version">v.1.0.3</span></h1>
   <div class="sub">J.S.A.用語選択用紙をベースにしたデジタル記録ツール</div>
 
   <div class="tabs">
@@ -486,7 +486,7 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
     const listRes = await window.storage.get('entry_ids').catch(() => null);
     let ids = listRes ? JSON.parse(listRes.value) : [];
     let added = 0;
-    for (let i = 1; i < rows.length; i++) {
+    for (let i = rows.length - 1; i >= 1; i--) {
       const r = rows[i];
       if (!r || r.length < header.length) continue;
       let id = r[idIdx] || ('entry_' + Date.now() + '_' + i);
