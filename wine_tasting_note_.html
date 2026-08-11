@@ -189,7 +189,7 @@
       </div>
     </div>
 
-    <button class="save-btn" id="saveBtn">この内容を保存する</button>
+    <button class="save-btn" id="saveBtn">この内容を記録する</button>
     <div class="status" id="saveStatus"></div>
   </div>
 
@@ -529,14 +529,14 @@ async function saveEntry() {
     await window.storage.set('entry_ids', JSON.stringify(ids));
     await window.storage.set(entry.id, JSON.stringify(entry));
 
-    statusEl.textContent = '保存しました。';
+    statusEl.textContent = '記録しました。';
     document.getElementById('wineName').value = '';
     document.getElementById('comment').value = '';
     resetSelections();
     renderForm();
     setTimeout(() => { statusEl.textContent = ''; }, 2000);
   } catch (e) {
-    statusEl.textContent = '保存に失敗しました。';
+    statusEl.textContent = '記録に失敗しました。';
   }
 }
 document.getElementById('saveBtn').addEventListener('click', saveEntry);
