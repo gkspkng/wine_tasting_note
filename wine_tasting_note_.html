@@ -141,10 +141,12 @@
     display: inline-block; background: var(--accent-light); color: var(--accent);
     border-radius: 4px; padding: 1px 6px; margin: 2px 3px 2px 0; font-size: 12px;
   }
-  .del-btn {
-    background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer;
-    margin-top: 8px; padding: 0;
+  .entry-row-right { display: flex; align-items: center; gap: 10px; }
+  .del-icon-btn {
+    background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer;
+    padding: 4px; line-height: 1; border-radius: 6px;
   }
+  .del-icon-btn:active { background: var(--surface-1); color: #d33; }
   .empty { text-align: center; color: var(--text-muted); padding: 30px 0; font-size: 14px; }
   .type-toggle { display: flex; gap: 8px; margin-bottom: 4px; }
   .type-toggle button {
@@ -592,13 +594,15 @@ async function loadEntries() {
             <div class="entry-title">${entry.name}</div>
             <div class="entry-date">${dateStr}</div>
           </div>
-          <span class="entry-chevron">▶</span>
+          <div class="entry-row-right">
+            <button class="del-icon-btn" data-id="${entry.id}" aria-label="削除" title="削除">🗑</button>
+            <span class="entry-chevron">▶</span>
+          </div>
         </div>
         <div class="entry-detail">
           <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">タイプ：${typeLabel}ワイン</div>
           ${detailHtml}
           ${commentHtml}
-          <button class="del-btn" data-id="${entry.id}">削除</button>
         </div>`;
       listEl.appendChild(div);
     }
@@ -607,10 +611,11 @@ async function loadEntries() {
         row.closest('.entry').classList.toggle('open');
       });
     });
-    listEl.querySelectorAll('.del-btn').forEach(btn => {
+    listEl.querySelectorAll('.del-icon-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const id = btn.getAttribute('data-id');
+        if (!confirm('この記録を削除しますか？')) return;
         try {
           const listRes = await window.storage.get('entry_ids').catch(() => null);
           let ids2 = listRes ? JSON.parse(listRes.value) : [];
