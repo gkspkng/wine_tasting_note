@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>ワイン・テイスティングノート</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --border: #ddd;
+    --border-strong: #bbb;
+    --surface-1: #f7f7f5;
+    --surface-2: #ffffff;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666;
+    --text-muted: #999;
+    --accent: #7a3b2e;
+    --accent-light: #f3e6e2;
+    --group-appearance: #b8863c;
+    --group-appearance-bg: #faf3e3;
+    --group-aroma: #7d5ba6;
+    --group-aroma-bg: #f2ecf8;
+    --group-palate: #7a3b2e;
+    --group-palate-bg: #f3e6e2;
+    --group-label: #4b7a4a;
+    --group-label-bg: #eef5ec;
+    --group-drink: #4a6fa5;
+    --group-drink-bg: #eaf1fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --border: #3a3a3a;
+      --border-strong: #4a4a4a;
+      --surface-1: #1e1e1e;
+      --surface-2: #262626;
+      --text-primary: #f0f0f0;
+      --text-secondary: #aaa;
+      --text-muted: #777;
+      --accent: #d99b8a;
+      --accent-light: #3a2622;
+      --group-appearance: #d9a75c;
+      --group-appearance-bg: #3a2f1a;
+      --group-aroma: #b79bd1;
+      --group-aroma-bg: #2c2438;
+      --group-palate: #d99b8a;
+      --group-palate-bg: #3a2622;
+      --group-label: #8fbf87;
+      --group-label-bg: #223a22;
+      --group-drink: #8fb3e0;
+      --group-drink-bg: #1e2f42;
+    }
+  }
+  * { box-sizing: border-box; }
+  html {
+    background: var(--surface-1);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: var(--surface-1);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 16px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--text-secondary); font-size: 13px; margin-bottom: 16px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab-btn {
+    flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text-primary); font-size: 14px; cursor: pointer;
+  }
+  .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .view { display: none; }
+  .view.active { display: block; }
+  .card {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; margin-bottom: 12px;
+  }
+  .card h2 { font-size: 14px; margin: 0 0 10px; color: var(--text-secondary); font-weight: 600; }
+  .term-group {
+    border: 1px solid var(--border-strong); border-radius: 12px; padding: 12px; margin-bottom: 14px;
+  }
+  .term-group-title {
+    font-size: 13px; font-weight: 700; margin-bottom: 10px; letter-spacing: 0.05em;
+  }
+  .term-group .card:last-child { margin-bottom: 0; }
+  .term-group--appearance { border-color: var(--group-appearance); background: var(--group-appearance-bg); }
+  .term-group--appearance .term-group-title { color: var(--group-appearance); }
+  .term-group--aroma { border-color: var(--group-aroma); background: var(--group-aroma-bg); }
+  .term-group--aroma .term-group-title { color: var(--group-aroma); }
+  .term-group--palate { border-color: var(--group-palate); background: var(--group-palate-bg); }
+  .term-group--palate .term-group-title { color: var(--group-palate); }
+  .term-group--label { border-color: var(--group-label); background: var(--group-label-bg); }
+  .term-group--label .term-group-title { color: var(--group-label); }
+  .term-group--drink { border-color: var(--group-drink); background: var(--group-drink-bg); }
+  .term-group--drink .term-group-title { color: var(--group-drink); }
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 13px; margin-bottom: 6px; }
+  .field .hint { color: var(--text-muted); font-size: 11px; margin-left: 4px; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary); font-size: 14px;
+  }
+  textarea { resize: vertical; font-family: inherit; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 8px 12px; border-radius: 16px; border: 1px solid var(--border-strong);
+    background: var(--surface-1); color: var(--text-primary); font-size: 14px; cursor: pointer;
+    user-select: none;
+  }
+  .chip.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .save-btn, .action-btn {
+    width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--accent);
+    color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px;
+  }
+  .save-btn:active, .action-btn:active { opacity: 0.85; }
+  .entry {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    margin-bottom: 10px; overflow: hidden;
+  }
+  .entry-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; cursor: pointer;
+  }
+  .entry-row:active { background: var(--surface-1); }
+  .entry-title { font-weight: 600; font-size: 15px; }
+  .entry-date { font-size: 12px; color: var(--text-muted); }
+  .entry-chevron { color: var(--text-muted); font-size: 12px; margin-left: 8px; transition: transform 0.15s; }
+  .entry.open .entry-chevron { transform: rotate(90deg); }
+  .entry-detail { display: none; padding: 0 14px 14px; border-top: 1px solid var(--border); }
+  .entry.open .entry-detail { display: block; padding-top: 10px; }
+  .entry-detail .card { padding: 12px; margin-bottom: 8px; }
+  .entry-detail .card h2 { font-size: 13px; }
+  .entry-detail .term-group { padding: 10px; margin-bottom: 10px; }
+  .entry-detail .chip { cursor: default; }
+  .entry-detail .chip:not(.selected) { opacity: 0.45; }
+  .entry-body span.tag {
+    display: inline-block; background: var(--accent-light); color: var(--accent);
+    border-radius: 4px; padding: 1px 6px; margin: 2px 3px 2px 0; font-size: 12px;
+  }
+  .del-btn {
+    background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer;
+    margin-top: 8px; padding: 0;
+  }
+  .empty { text-align: center; color: var(--text-muted); padding: 30px 0; font-size: 14px; }
+  .type-toggle { display: flex; gap: 8px; margin-bottom: 4px; }
+  .type-toggle button {
+    flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-strong);
+    background: var(--surface-1); color: var(--text-primary); font-size: 13px; cursor: pointer;
+  }
+  .type-toggle button.active { background: var(--text-primary); color: var(--surface-2); }
+  .status { font-size: 12px; color: var(--accent); margin-top: 6px; min-height: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ワイン・テイスティングノート</h1>
+  <div class="sub">J.S.A.用語選択用紙をベースにしたデジタル記録ツール</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-view="input">記録する</button>
+    <button class="tab-btn" data-view="list">記録一覧</button>
+  </div>
+
+  <div id="view-input" class="view active">
+    <div class="card">
+      <div class="field">
+        <label>タイプ</label>
+        <div class="type-toggle">
+          <button id="type-white" class="active">白ワイン</button>
+          <button id="type-red">赤ワイン</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>タイトル</label>
+        <input type="text" id="wineName" placeholder="例：シャブリ 2023">
+      </div>
+    </div>
+
+    <div id="form-sections"></div>
+
+    <div class="card">
+      <div class="field">
+        <label>コメント</label>
+        <textarea id="comment" rows="4" placeholder=""></textarea>
+      </div>
+    </div>
+
+    <button class="save-btn" id="saveBtn">この内容を保存する</button>
+    <div class="status" id="saveStatus"></div>
+  </div>
+
+  <div id="view-list" class="view">
+    <div class="card" style="padding:12px; display:flex; gap:8px;">
+      <button class="action-btn" id="exportBtn" style="margin:0;">エクスポート</button>
+      <button class="action-btn" id="importBtn" style="margin:0; background:var(--surface-1); color:var(--text-primary); border:1px solid var(--border-strong);">インポート</button>
+      <input type="file" id="importFile" accept=".csv" style="display:none;">
+    </div>
+    <div class="status" id="importStatus"></div>
+    <div id="entryList"></div>
+  </div>
+</div>
+
+<script>
+const TERMS = {
+  white: {
+    "清澄度": {type:"single", opts:["澄んだ","やや濁った","濁った"]},
+    "輝き": {type:"single", opts:["輝きのある","ややくすんだ","モヤがかかった"]},
+    "色調": {type:"multi", opts:["シルバーがかった","グリーンがかった","レモンイエロー","イエロー","黄金色がかった","黄金色","トパーズ","オレンジ（グリ）を帯びた","アンバー"]},
+    "濃淡": {type:"single", opts:["無色に近い","淡い","やや濃い","濃い","非常に濃い"]},
+    "粘性": {type:"single", opts:["さらっとした","適度な","やや強い","ねっとりした"]},
+    "外観の印象": {type:"multi", opts:["若々しい","軽快な","成熟度が高い","濃縮感がある","やや発展した","熟成のニュアンスが見える","熟成した","酸化が進んだ","気泡が見える","発泡性"]},
+    "第一印象": {type:"multi", opts:["閉じている","控えめ","開いている","フレッシュな","ミネラリー","豊かな","熟度の高い","華やかな","濃縮感がある","セイボリーな","複雑な","力強い"]},
+    "果実・花・植物": {type:"multi", opts:["柑橘類","青リンゴ","リンゴ","洋梨","花梨","白桃","アプリコット","パイナップル","マスカット","パッションフルーツ","バナナ","マンゴー","ライチ","スイカズラ","アカシア","白バラ","キンモクセイ","柑橘類の花","菩提樹","ミント","アニス","ヴェルヴェーヌ","ハーブ","タイム","ヘーゼルナッツ","フレッシュ・アーモンド"]},
+    "香辛料・芳香化学物質": {type:"multi", opts:["石灰","火打石","貝殻","鉱物","海の香り","パン・ドゥ・ミ","トースト","ジンジャーブレッド","煙・燻製","ヴァニラ","シナモン","白胡椒","コリアンダーシード","丁子","香木","蜂蜜","花の蜜","乳製品","硫黄","麝香","ペトロール（ケロセン）","ワックス","蜜蝋","フェノール"]},
+    "香りの印象": {type:"multi", opts:["若々しい","嫌気的な","熟成感が現れている","酸化熟成の段階にある","成熟度が高い","第1アロマが強い","第2アロマが強い","ニュートラル","木樽からのニュアンス"]},
+    "アタック": {type:"single", opts:["軽い","やや軽い","やや強い","強い","インパクトのある"]},
+    "甘み": {type:"single", opts:["ドライ","ソフトな","まろやか","豊かな","残糖がある"]},
+    "酸味": {type:"multi", opts:["爽やかな","軽やかな","直線的","堅固な","なめらかな","はつらつとした","力強い"]},
+    "苦味": {type:"multi", opts:["控えめ","穏やかな","コク（深み）を与える","旨みをともなった","強い（突出した）"]},
+    "バランス": {type:"multi", opts:["スリムな","スムーズな","コンパクトな","ドライな","まろやかな","ねっとりした","ジューシーな","豊潤な","厚みのある","抑制された"]},
+    "アルコール": {type:"single", opts:["10.9%以下","11.0-11.9%","12.0-12.9%","13.0-13.9%","14%以上"]},
+    "余韻": {type:"single", opts:["短い","やや短い","やや長い","長い"]},
+    "総合評価": {type:"multi", opts:["シンプル、フレッシュ感を楽しむ","成熟度が高く、豊かな","濃縮し、力強い","エレガントで、ミネラリー","滑らかで、バランスが良い","ポテンシャルの高い"]},
+    "適正温度": {type:"single", opts:["8度未満","8-10度","11-14度","15-18度","19度以上"]},
+    "グラス": {type:"multi", opts:["小ぶり","中庸","大ぶり","バルーン型","チューリップ型"]},
+    "収穫年": {type:"single", opts:["2021","2022","2023","2024","2025"]},
+    "生産地（国）": {type:"single", opts:["アメリカ","アルゼンチン","イタリア","オーストラリア","スペイン","チリ","ドイツ","日本","ニュージーランド","フランス","その他"]},
+    "主なブドウ品種": {type:"single", opts:["アリゴテ","ゲヴュルツトラミネール","甲州","シャルドネ","シュナン・ブラン","ソーヴィニヨン・ブラン","アルバリーニョ","トロンテス","ミュスカデ","リースリング","その他"]}
+  },
+  red: {
+    "清澄度": {type:"single", opts:["澄んだ","深みのある","やや濁った","濁った"]},
+    "輝き": {type:"single", opts:["輝きのある","艶のある","モヤがかかった"]},
+    "色調": {type:"multi", opts:["紫がかった","オレンジがかった","黒みを帯びた","縁が明るい","ガーネット","ルビー","ダークチェリーレッド","ラズベリーレッド","トパーズ","マホガニー","レンガ"]},
+    "濃淡": {type:"single", opts:["淡い","明るい","やや明るい","やや濃い","濃い","非常に濃い"]},
+    "粘性": {type:"single", opts:["さらっとした","やや軽い","やや強い","強い"]},
+    "外観の印象": {type:"multi", opts:["若々しい","若い状態を抜けた","軽快な","成熟度が高い","濃縮感が強い","やや熟成した","熟成した","酸化熟成のニュアンス","酸化が進んだ"]},
+    "第一印象": {type:"multi", opts:["閉じている","控えめ","開いている","ミネラリー","強い","華やかな","濃縮感がある","深みのある","複雑な"]},
+    "果実・花・植物": {type:"multi", opts:["イチゴ","ラズベリー","ブルーベリー","カシス","ブラックベリー","ブラックチェリー","干しプラム","乾燥イチジク","バラ","スミレ","牡丹","ゼラニウム","ピーマン","メントール","シダ","ローリエ","杉","針葉樹","ドライハーブ","タバコ","紅茶","キノコ","ユーカリ","スーボア","トリュフ","土","トマト","黒オリーブ"]},
+    "香辛料・芳香化学物質": {type:"multi", opts:["黒胡椒","丁子","シナモン","ナツメグ","甘草","ヴァニラ","ロースト","生肉","乾いた肉","なめし皮","動物的なニュアンス","鉄分","グリエ","煙・燻製","樹脂","コーヒー","チョコレート","ヨード","ランシオ"]},
+    "香りの印象": {type:"multi", opts:["若々しい","嫌気的な","熟成感が現れている","酸化熟成の段階にある","酸化した","第1アロマが強い","第2アロマが強い","ニュートラル","木樽からのニュアンス"]},
+    "アタック": {type:"single", opts:["軽い","やや軽い","やや強い","強い","インパクトのある"]},
+    "甘み": {type:"single", opts:["ドライ","ソフトな","まろやか","豊かな","残糖がある"]},
+    "酸味": {type:"multi", opts:["爽やかな","軽やかな","直線的","堅固な","なめらかな","生き生きとした","しなやかな","力強い"]},
+    "タンニン分": {type:"multi", opts:["収斂性のある","力強い","緻密","サラサラとした","ヴィロードのような","シルキーな","溶け込んだ"]},
+    "バランス": {type:"multi", opts:["スマートな","骨格のしっかりした","堅固な","痩せた、渇いた","豊満な","ジューシーな","力強い","流れるような","ふくよかな"]},
+    "アルコール": {type:"single", opts:["10.9%以下","11.0-11.9%","12.0-12.9%","13.0-13.9%","14%以上"]},
+    "余韻": {type:"single", opts:["短い","やや短い","やや長い","長い"]},
+    "総合評価": {type:"multi", opts:["シンプル、フレッシュ感を楽しむ","成熟度が高く、豊か","濃縮し、力強い","エレガントで、余韻の長い","複雑性があり、引き締まった"]},
+    "適正温度": {type:"single", opts:["10度未満","10-13度","14-16度","17-20度","21度以上"]},
+    "グラス": {type:"multi", opts:["小ぶり","中庸","大ぶり","バルーン型","チューリップ型"]},
+    "収穫年": {type:"single", opts:["2020","2021","2022","2023","2024"]},
+    "生産地（国）": {type:"single", opts:["アメリカ","アルゼンチン","イタリア","オーストラリア","スペイン","チリ","ドイツ","日本","ニュージーランド","フランス","その他"]},
+    "主なブドウ品種": {type:"single", opts:["カベルネ・ソーヴィニヨン","グルナッシュ","サンジョベーゼ","シラー／シラーズ","テンプラニーリョ","ネッビオーロ","ピノ・ノワール","マスカット・ベーリーA","カルメネール","メルロ","ジンファンデル","マルベック","その他"]}
+  }
+};
+
+const SECTION_GROUPS = {
+  white: [
+    { title: "外観", cls: "appearance", keys: ["清澄度","輝き","色調","濃淡","粘性","外観の印象"] },
+    { title: "香り", cls: "aroma", keys: ["第一印象","果実・花・植物","香辛料・芳香化学物質","香りの印象"] },
+    { title: "味わい", cls: "palate", keys: ["アタック","甘み","酸味","苦味","バランス","アルコール","余韻"] },
+    { title: "評価", cls: "drink", keys: ["総合評価","適正温度","グラス"] },
+    { title: "ブドウ", cls: "label", keys: ["収穫年","生産地（国）","主なブドウ品種"] }
+  ],
+  red: [
+    { title: "外観", cls: "appearance", keys: ["清澄度","輝き","色調","濃淡","粘性","外観の印象"] },
+    { title: "香り", cls: "aroma", keys: ["第一印象","果実・花・植物","香辛料・芳香化学物質","香りの印象"] },
+    { title: "味わい", cls: "palate", keys: ["アタック","甘み","酸味","タンニン分","バランス","アルコール","余韻"] },
+    { title: "評価", cls: "drink", keys: ["総合評価","適正温度","グラス"] },
+    { title: "ブドウ", cls: "label", keys: ["収穫年","生産地（国）","主なブドウ品種"] }
+  ]
+};
+
+let currentType = "white";
+let selections = {};
+
+const localStore = {
+  async get(key) {
+    const v = localStorage.getItem('wine_' + key);
+    if (v === null) throw new Error('not found');
+    return { key, value: v };
+  },
+  async set(key, value) {
+    localStorage.setItem('wine_' + key, value);
+    return { key, value };
+  },
+  async delete(key) {
+    localStorage.removeItem('wine_' + key);
+    return { key, deleted: true };
+  }
+};
+if (typeof window.storage === 'undefined') {
+  window.storage = localStore;
+}
+
+
+function resetSelections() {
+  selections = {};
+  Object.keys(TERMS[currentType]).forEach(k => selections[k] = []);
+}
+resetSelections();
+
+function buildTermCard(key, def) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const hintText = def.type === 'multi' ? '（複数選択可）' : '';
+  card.innerHTML = `<h2>${key}<span class="hint">${hintText}</span></h2>
+    <div class="chips" data-key="${key}">
+      ${def.opts.map(o => `<div class="chip" data-val="${o}">${o}</div>`).join('')}
+    </div>`;
+  return card;
+}
+
+function renderForm() {
+  const container = document.getElementById('form-sections');
+  container.innerHTML = '';
+  const terms = TERMS[currentType];
+  const keyToGroup = new Map();
+  SECTION_GROUPS[currentType].forEach(group => {
+    group.keys.forEach(key => { if (terms[key]) keyToGroup.set(key, group); });
+  });
+  const renderedGroups = new Set();
+
+  Object.keys(terms).forEach(key => {
+    const group = keyToGroup.get(key);
+    if (!group) {
+      container.appendChild(buildTermCard(key, terms[key]));
+      return;
+    }
+    if (renderedGroups.has(group)) return;
+    renderedGroups.add(group);
+    const groupEl = document.createElement('div');
+    groupEl.className = `term-group term-group--${group.cls}`;
+    const title = document.createElement('div');
+    title.className = 'term-group-title';
+    title.textContent = group.title;
+    groupEl.appendChild(title);
+    group.keys.forEach(k => {
+      if (terms[k]) groupEl.appendChild(buildTermCard(k, terms[k]));
+    });
+    container.appendChild(groupEl);
+  });
+
+  container.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const key = chip.parentElement.getAttribute('data-key');
+      const val = chip.getAttribute('data-val');
+      const def = terms[key];
+      if (def.type === 'single') {
+        selections[key] = selections[key][0] === val ? [] : [val];
+        chip.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+        if (selections[key].length) chip.classList.add('selected');
+      } else {
+        const idx = selections[key].indexOf(val);
+        if (idx >= 0) { selections[key].splice(idx, 1); chip.classList.remove('selected'); }
+        else { selections[key].push(val); chip.classList.add('selected'); }
+      }
+    });
+  });
+}
+
+document.getElementById('type-white').addEventListener('click', () => switchType('white'));
+document.getElementById('type-red').addEventListener('click', () => switchType('red'));
+
+function switchType(type) {
+  currentType = type;
+  document.getElementById('type-white').classList.toggle('active', type === 'white');
+  document.getElementById('type-red').classList.toggle('active', type === 'red');
+  resetSelections();
+  renderForm();
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.getAttribute('data-view');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    if (view === 'list') loadEntries();
+  });
+});
+
+async function getAllEntries() {
+  const listRes = await window.storage.get('entry_ids').catch(() => null);
+  const ids = listRes ? JSON.parse(listRes.value) : [];
+  const entries = [];
+  for (const id of ids) {
+    try {
+      const r = await window.storage.get(id);
+      if (r) entries.push(JSON.parse(r.value));
+    } catch (e) {}
+  }
+  return entries;
+}
+
+function htmlEscape(val) {
+  const div = document.createElement('div');
+  div.textContent = val == null ? '' : val;
+  return div.innerHTML;
+}
+
+function csvEscape(val) {
+  const s = String(val == null ? '' : val);
+  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function entriesToCsv(entries) {
+  const header = ['id', 'date', 'type', 'name', 'selections_json', 'comment'];
+  const rows = entries.map(e => [
+    e.id, e.date, e.type, e.name, JSON.stringify(e.selections), e.comment || ''
+  ].map(csvEscape).join(','));
+  return header.join(',') + '\n' + rows.join('\n');
+}
+
+function downloadCsv(csvText, filename) {
+  const blob = new Blob(['\uFEFF' + csvText], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else field += c;
+    }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.length > 1 || r[0] !== '');
+}
+
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  const statusEl = document.getElementById('importStatus');
+  const allEntries = await getAllEntries();
+  if (!allEntries.length) { statusEl.textContent = 'エクスポートする記録がありません。'; return; }
+  const csv = entriesToCsv(allEntries);
+  downloadCsv(csv, `wine_tasting_notes_${new Date().toISOString().slice(0,10)}.csv`);
+  statusEl.textContent = 'CSVを書き出しました。';
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+
+document.getElementById('importFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  const statusEl = document.getElementById('importStatus');
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const rows = parseCsv(text);
+    if (rows.length < 2) { statusEl.textContent = '有効なデータが見つかりませんでした。'; return; }
+    const header = rows[0];
+    const idIdx = header.indexOf('id');
+    const dateIdx = header.indexOf('date');
+    const typeIdx = header.indexOf('type');
+    const nameIdx = header.indexOf('name');
+    const selIdx = header.indexOf('selections_json');
+    const commentIdx = header.indexOf('comment');
+    const listRes = await window.storage.get('entry_ids').catch(() => null);
+    let ids = listRes ? JSON.parse(listRes.value) : [];
+    let added = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.length < header.length) continue;
+      let id = r[idIdx] || ('entry_' + Date.now() + '_' + i);
+      let selections = {};
+      try { selections = JSON.parse(r[selIdx] || '{}'); } catch (e) { selections = {}; }
+      const entry = {
+        id, type: r[typeIdx] || 'white', name: r[nameIdx] || '(タイトル未入力)',
+        date: r[dateIdx] || new Date().toISOString(), selections,
+        comment: (commentIdx >= 0 && r[commentIdx]) || ''
+      };
+      await window.storage.set(entry.id, JSON.stringify(entry));
+      if (ids.indexOf(entry.id) === -1) { ids.unshift(entry.id); added++; }
+    }
+    await window.storage.set('entry_ids', JSON.stringify(ids));
+    statusEl.textContent = `${added}件を読み込みました。`;
+    loadEntries();
+  } catch (err) {
+    statusEl.textContent = '読み込みに失敗しました。CSVの形式を確認してください。';
+  }
+  e.target.value = '';
+});
+
+async function saveEntry() {
+  const name = document.getElementById('wineName').value.trim();
+  const statusEl = document.getElementById('saveStatus');
+  const hasSelection = Object.values(selections).some(v => v.length > 0);
+  if (!name && !hasSelection) {
+    statusEl.textContent = 'ワイン名か、少なくとも1項目を入力してください。';
+    return;
+  }
+  const entry = {
+    id: 'entry_' + Date.now(),
+    type: currentType,
+    name: name || '(タイトル未入力)',
+    date: new Date().toISOString(),
+    selections: JSON.parse(JSON.stringify(selections)),
+    comment: document.getElementById('comment').value.trim()
+  };
+  try {
+    const listRes = await window.storage.get('entry_ids').catch(() => null);
+    let ids = listRes ? JSON.parse(listRes.value) : [];
+    ids.unshift(entry.id);
+    await window.storage.set('entry_ids', JSON.stringify(ids));
+    await window.storage.set(entry.id, JSON.stringify(entry));
+
+    statusEl.textContent = '保存しました。';
+    document.getElementById('wineName').value = '';
+    document.getElementById('comment').value = '';
+    resetSelections();
+    renderForm();
+    setTimeout(() => { statusEl.textContent = ''; }, 2000);
+  } catch (e) {
+    statusEl.textContent = '保存に失敗しました。';
+  }
+}
+document.getElementById('saveBtn').addEventListener('click', saveEntry);
+
+async function loadEntries() {
+  const listEl = document.getElementById('entryList');
+  listEl.innerHTML = '<div class="empty">読み込み中...</div>';
+  try {
+    const listRes = await window.storage.get('entry_ids').catch(() => null);
+    const ids = listRes ? JSON.parse(listRes.value) : [];
+    if (!ids.length) {
+      listEl.innerHTML = '<div class="empty">まだ記録がありません。</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    for (const id of ids) {
+      let entryRes;
+      try { entryRes = await window.storage.get(id); } catch (e) { continue; }
+      if (!entryRes) continue;
+      const entry = JSON.parse(entryRes.value);
+      const div = document.createElement('div');
+      div.className = 'entry';
+      const dateStr = new Date(entry.date).toLocaleString('ja-JP');
+      const typeLabel = entry.type === 'white' ? '白' : '赤';
+      const terms = TERMS[entry.type] || TERMS.white;
+      const buildDetailCard = (key) => {
+        const def = terms[key];
+        const selected = (entry.selections && entry.selections[key]) || [];
+        const chips = def.opts.map(o =>
+          `<div class="chip${selected.indexOf(o) >= 0 ? ' selected' : ''}">${o}</div>`
+        ).join('');
+        return `<div class="card"><h2>${key}</h2><div class="chips">${chips}</div></div>`;
+      };
+      const keyToGroup = new Map();
+      (SECTION_GROUPS[entry.type] || SECTION_GROUPS.white).forEach(group => {
+        group.keys.forEach(key => { if (terms[key]) keyToGroup.set(key, group); });
+      });
+      const renderedGroups = new Set();
+      const detailHtml = Object.keys(terms).map(key => {
+        const group = keyToGroup.get(key);
+        if (!group) return buildDetailCard(key);
+        if (renderedGroups.has(group)) return '';
+        renderedGroups.add(group);
+        const cardsHtml = group.keys.filter(k => terms[k]).map(buildDetailCard).join('');
+        return `<div class="term-group term-group--${group.cls}"><div class="term-group-title">${group.title}</div>${cardsHtml}</div>`;
+      }).join('');
+      const commentHtml = entry.comment
+        ? `<div class="card"><h2>コメント</h2><div style="font-size:14px; white-space:pre-wrap;">${htmlEscape(entry.comment)}</div></div>`
+        : '';
+      div.innerHTML = `
+        <div class="entry-row" data-id="${entry.id}">
+          <div>
+            <div class="entry-title">${entry.name}</div>
+            <div class="entry-date">${dateStr}</div>
+          </div>
+          <span class="entry-chevron">▶</span>
+        </div>
+        <div class="entry-detail">
+          <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">タイプ：${typeLabel}ワイン</div>
+          ${detailHtml}
+          ${commentHtml}
+          <button class="del-btn" data-id="${entry.id}">削除</button>
+        </div>`;
+      listEl.appendChild(div);
+    }
+    listEl.querySelectorAll('.entry-row').forEach(row => {
+      row.addEventListener('click', () => {
+        row.closest('.entry').classList.toggle('open');
+      });
+    });
+    listEl.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        try {
+          const listRes = await window.storage.get('entry_ids').catch(() => null);
+          let ids2 = listRes ? JSON.parse(listRes.value) : [];
+          ids2 = ids2.filter(x => x !== id);
+          await window.storage.set('entry_ids', JSON.stringify(ids2));
+          await window.storage.delete(id).catch(() => {});
+          loadEntries();
+        } catch (e) {}
+      });
+    });
+  } catch (e) {
+    listEl.innerHTML = '<div class="empty">読み込みに失敗しました。</div>';
+  }
+}
+
+renderForm();
+</script>
+</body>
+</html>
