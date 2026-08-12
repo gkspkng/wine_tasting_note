@@ -296,49 +296,49 @@ function formatPoints(n) {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
-function categoryPointsList(scores) {
+function categoryPointsList(correctCounts) {
   return Object.keys(SCORE_CONFIG).map(key => {
     const cfg = SCORE_CONFIG[key];
-    const n = Number(scores[key]) || 0;
+    const n = Number(correctCounts[key]) || 0;
     return { cfg, n, points: n * cfg.multiplier };
   });
 }
 
-function scoreOutputHtml(scores) {
-  return categoryPointsList(scores).map(({ cfg, n, points }) =>
+function scoreOutputHtml(correctCounts) {
+  return categoryPointsList(correctCounts).map(({ cfg, n, points }) =>
     `${cfg.label}：${n}×${cfg.multiplier.toFixed(1)}＝${formatPoints(points)}点<span style="color:var(--text-secondary); font-weight:400;">（${cfg.items}項目・満点${formatPoints(cfg.maxPoints)}点）</span>`
   ).join('<br>');
 }
 
-const GRADE_CONFIG = {
+const ANSWER_CONFIG = {
   country: { termKey: "生産地（国）", label: "　国　", points: 10 },
   year: { termKey: "収穫年", label: "収穫年", points: 6 },
   variety: { termKey: "主なブドウ品種", label: "品　種", points: 16 }
 };
-const GRADE_BY_TERM_KEY = {};
-Object.keys(GRADE_CONFIG).forEach(key => { GRADE_BY_TERM_KEY[GRADE_CONFIG[key].termKey] = key; });
+const ANSWER_BY_TERM_KEY = {};
+Object.keys(ANSWER_CONFIG).forEach(key => { ANSWER_BY_TERM_KEY[ANSWER_CONFIG[key].termKey] = key; });
 
-function gradePointsList(grades) {
-  const countryOk = !!grades.country;
+function answerPointsList(correctAnswers) {
+  const countryOk = !!correctAnswers.country;
   return ['year', 'country', 'variety'].map(key => {
-    const cfg = GRADE_CONFIG[key];
-    const ok = !!grades[key];
+    const cfg = ANSWER_CONFIG[key];
+    const ok = !!correctAnswers[key];
     const points = (ok && (key !== 'year' || countryOk)) ? cfg.points : 0;
     return { cfg, ok, points };
   });
 }
 
-function gradeOutputHtml(grades) {
-  return gradePointsList(grades).map(({ cfg, ok, points }) =>
+function answerOutputHtml(correctAnswers) {
+  return answerPointsList(correctAnswers).map(({ cfg, ok, points }) =>
     `${cfg.label}：${ok ? '正解' : '不正解'}＝${points}点<span style="color:var(--text-secondary); font-weight:400;">(1項目・満点${formatPoints(cfg.points)}点)</span>`
   ).join('<br>');
 }
 
-function scoreTotalHtml(scores, grades) {
-  const allPoints = categoryPointsList(scores).map(p => p.points).concat(gradePointsList(grades).map(p => p.points));
+function scoreTotalHtml(correctCounts, correctAnswers) {
+  const allPoints = categoryPointsList(correctCounts).map(p => p.points).concat(answerPointsList(correctAnswers).map(p => p.points));
   const total = allPoints.reduce((a, b) => a + b, 0);
   const maxTotal = Object.values(SCORE_CONFIG).reduce((a, cfg) => a + cfg.maxPoints, 0)
-    + Object.values(GRADE_CONFIG).reduce((a, cfg) => a + cfg.points, 0);
+    + Object.values(ANSWER_CONFIG).reduce((a, cfg) => a + cfg.points, 0);
   return `合計：${formatPoints(total)}点 / ${formatPoints(maxTotal)}点`;
 }
 
@@ -624,34 +624,34 @@ function makeEditSelections(entry) {
   return sel;
 }
 
-function makeEditScores(entry) {
-  const s = entry.scores || {};
-  const scores = {};
-  Object.keys(SCORE_CONFIG).forEach(key => { scores[key] = Number(s[key]) || 0; });
-  return scores;
+function makeEditCorrectCounts(entry) {
+  const s = entry.correctCounts || {};
+  const correctCounts = {};
+  Object.keys(SCORE_CONFIG).forEach(key => { correctCounts[key] = Number(s[key]) || 0; });
+  return correctCounts;
 }
 
-function makeEditGrades(entry) {
-  const g = entry.grades || {};
-  const grades = {};
-  Object.keys(GRADE_CONFIG).forEach(key => { grades[key] = !!g[key]; });
-  return grades;
+function makeEditCorrectAnswers(entry) {
+  const a = entry.correctAnswers || {};
+  const correctAnswers = {};
+  Object.keys(ANSWER_CONFIG).forEach(key => { correctAnswers[key] = !!a[key]; });
+  return correctAnswers;
 }
 
-function buildGradeField(gradeKey, editGrades, radioName, onChange) {
+function buildAnswerField(answerKey, editCorrectAnswers, radioName, onChange) {
   const field = document.createElement('div');
   field.style.cssText = 'display:flex; justify-content:flex-end; gap:16px; margin:-6px 0 14px;';
   field.innerHTML = `
     <label style="display:flex; align-items:center; gap:5px; font-size:13px; font-weight:500; cursor:pointer;">
-      <input type="radio" name="${radioName}" value="correct"${editGrades[gradeKey] ? ' checked' : ''}> 正解
+      <input type="radio" name="${radioName}" value="correct"${editCorrectAnswers[answerKey] ? ' checked' : ''}> 正解
     </label>
     <label style="display:flex; align-items:center; gap:5px; font-size:13px; font-weight:500; cursor:pointer;">
-      <input type="radio" name="${radioName}" value="incorrect"${editGrades[gradeKey] ? '' : ' checked'}> 不正解
+      <input type="radio" name="${radioName}" value="incorrect"${editCorrectAnswers[answerKey] ? '' : ' checked'}> 不正解
     </label>`;
   field.querySelectorAll('input[type=radio]').forEach(radio => {
     radio.addEventListener('change', () => {
       if (!radio.checked) return;
-      editGrades[gradeKey] = radio.value === 'correct';
+      editCorrectAnswers[answerKey] = radio.value === 'correct';
       if (onChange) onChange();
     });
   });
@@ -669,7 +669,7 @@ function buildEditableTermCard(key, def, editSelections) {
   return card;
 }
 
-function renderEditTermSections(type, editSelections, editScores, editGrades, entryId, onChange) {
+function renderEditTermSections(type, editSelections, editCorrectCounts, editCorrectAnswers, entryId, onChange) {
   const container = document.createElement('div');
   const terms = TERMS[type] || TERMS.white;
   const keyToGroup = new Map();
@@ -691,9 +691,9 @@ function renderEditTermSections(type, editSelections, editScores, editGrades, en
     group.keys.forEach(k => {
       if (!terms[k]) return;
       groupEl.appendChild(buildEditableTermCard(k, terms[k], editSelections));
-      const gradeKey = GRADE_BY_TERM_KEY[k];
-      if (gradeKey) {
-        groupEl.appendChild(buildGradeField(gradeKey, editGrades, `grade-${gradeKey}-${entryId}`, onChange));
+      const answerKey = ANSWER_BY_TERM_KEY[k];
+      if (answerKey) {
+        groupEl.appendChild(buildAnswerField(answerKey, editCorrectAnswers, `answer-${answerKey}-${entryId}`, onChange));
       }
     });
     const scoreCfg = SCORE_CONFIG[group.cls];
@@ -701,10 +701,10 @@ function renderEditTermSections(type, editSelections, editScores, editGrades, en
       const scoreField = document.createElement('div');
       scoreField.style.cssText = 'display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:10px;';
       scoreField.innerHTML = `<label style="margin:0; white-space:nowrap;">正解数<span class="hint">（${scoreCfg.items}項目中）</span></label>
-        <input type="number" class="score-input" inputmode="numeric" min="0" max="${scoreCfg.items}" step="1" value="${editScores[group.cls]}" style="width:64px; flex:none; background:#fff;">`;
+        <input type="number" class="score-input" inputmode="numeric" min="0" max="${scoreCfg.items}" step="1" value="${editCorrectCounts[group.cls]}" style="width:64px; flex:none; background:#fff;">`;
       const scoreInput = scoreField.querySelector('.score-input');
       scoreInput.addEventListener('input', () => {
-        editScores[group.cls] = Number(scoreInput.value) || 0;
+        editCorrectCounts[group.cls] = Number(scoreInput.value) || 0;
         if (onChange) onChange();
       });
       groupEl.appendChild(scoreField);
@@ -731,7 +731,7 @@ function renderEditTermSections(type, editSelections, editScores, editGrades, en
 }
 
 function buildEditForm(entry) {
-  const state = { type: entry.type, selections: makeEditSelections(entry), scores: makeEditScores(entry), grades: makeEditGrades(entry) };
+  const state = { type: entry.type, selections: makeEditSelections(entry), correctCounts: makeEditCorrectCounts(entry), correctAnswers: makeEditCorrectAnswers(entry) };
   const wrap = document.createElement('div');
   wrap.className = 'edit-form';
 
@@ -766,11 +766,11 @@ function buildEditForm(entry) {
   wrap.appendChild(scoreCard);
   const scoreOutputEl = scoreCard.querySelector('.score-output');
   function updateScoreOutput() {
-    scoreOutputEl.innerHTML = scoreOutputHtml(state.scores) + '<br>' + gradeOutputHtml(state.grades)
-      + `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border-strong);">${scoreTotalHtml(state.scores, state.grades)}</div>`;
+    scoreOutputEl.innerHTML = scoreOutputHtml(state.correctCounts) + '<br>' + answerOutputHtml(state.correctAnswers)
+      + `<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border-strong);">${scoreTotalHtml(state.correctCounts, state.correctAnswers)}</div>`;
   }
 
-  sectionsHost.appendChild(renderEditTermSections(state.type, state.selections, state.scores, state.grades, entry.id, updateScoreOutput));
+  sectionsHost.appendChild(renderEditTermSections(state.type, state.selections, state.correctCounts, state.correctAnswers, entry.id, updateScoreOutput));
   updateScoreOutput();
 
   const btnRow = document.createElement('div');
@@ -788,7 +788,7 @@ function buildEditForm(entry) {
       state.selections = emptySelections(newType);
       infoCard.querySelectorAll('.edit-type-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-type') === newType));
       sectionsHost.innerHTML = '';
-      sectionsHost.appendChild(renderEditTermSections(state.type, state.selections, state.scores, state.grades, entry.id, updateScoreOutput));
+      sectionsHost.appendChild(renderEditTermSections(state.type, state.selections, state.correctCounts, state.correctAnswers, entry.id, updateScoreOutput));
       updateScoreOutput();
     });
   });
@@ -801,8 +801,8 @@ function buildEditForm(entry) {
       type: state.type,
       name: name || '(タイトル未入力)',
       selections: state.selections,
-      scores: state.scores,
-      grades: state.grades,
+      correctCounts: state.correctCounts,
+      correctAnswers: state.correctAnswers,
       comment
     };
     await window.storage.set(updated.id, JSON.stringify(updated));
