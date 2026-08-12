@@ -154,6 +154,12 @@
     padding: 4px; line-height: 1; border-radius: 999px;
   }
   .del-icon-btn:active { background: #fbe0da; color: #d3524a; }
+  .util-btn {
+    background: var(--surface-1); border: 1.5px solid var(--border-strong); color: var(--text-secondary);
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    padding: 6px 12px; border-radius: 999px;
+  }
+  .util-btn:active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
   .empty { text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 14px; }
   .type-toggle { display: flex; gap: 8px; margin-bottom: 4px; }
   .type-toggle button {
@@ -214,7 +220,7 @@
   <h1>テイスティングノート<span class="wine-icon">🍷</span></h1>
   <div class="sub">
     <span>J.S.A.用語選択用紙をベースにしたデジタル記録ツール</span>
-    <span class="version">v.1.3.2</span>
+    <span class="version">v.1.3.3</span>
   </div>
 
   <div class="tabs">
@@ -251,9 +257,9 @@
   </div>
 
   <div id="view-list" class="view">
-    <div class="card" style="padding:12px; display:flex; gap:8px;">
-      <button class="action-btn" id="exportBtn" style="margin:0;">エクスポート</button>
-      <button class="action-btn" id="importBtn" style="margin:0; background:var(--surface-1); color:var(--text-primary); border:1.5px solid var(--border-strong); box-shadow:none;">インポート</button>
+    <div style="display:flex; justify-content:flex-end; gap:6px; margin-bottom:8px;">
+      <button class="util-btn" id="exportBtn">📤 エクスポート</button>
+      <button class="util-btn" id="importBtn">📥 インポート</button>
       <input type="file" id="importFile" accept=".csv,text/csv,text/plain" style="display:none;">
     </div>
     <div class="status" id="importStatus"></div>
@@ -774,7 +780,10 @@ function renderEditTermSections(type, editSelections, editCorrectCounts, editCor
         <input type="number" class="score-input" inputmode="numeric" min="0" max="${scoreCfg.items}" step="1" value="${editCorrectCounts[group.cls]}" style="width:64px; flex:none; background:#fff;">`;
       const scoreInput = scoreField.querySelector('.score-input');
       scoreInput.addEventListener('input', () => {
-        editCorrectCounts[group.cls] = Number(scoreInput.value) || 0;
+        let n = Number(scoreInput.value) || 0;
+        n = Math.max(0, Math.min(scoreCfg.items, n));
+        if (String(n) !== scoreInput.value) scoreInput.value = n;
+        editCorrectCounts[group.cls] = n;
         if (onChange) onChange();
       });
       groupEl.appendChild(scoreField);
@@ -903,12 +912,17 @@ function buildEntryElement(entry) {
       </div>
     </div>
     <div class="entry-detail"></div>`;
-  div.querySelector('.entry-detail').appendChild(buildEditForm(entry));
+  const detailEl = div.querySelector('.entry-detail');
+  let detailBuilt = false;
 
   div.querySelector('.entry-row').addEventListener('click', () => {
     const wasOpen = div.classList.contains('open');
     document.querySelectorAll('#entryList .entry.open').forEach(e => e.classList.remove('open'));
     if (!wasOpen) {
+      if (!detailBuilt) {
+        detailEl.appendChild(buildEditForm(entry));
+        detailBuilt = true;
+      }
       div.classList.add('open');
       div.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
