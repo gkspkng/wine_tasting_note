@@ -478,9 +478,10 @@ function csvEscape(val) {
 }
 
 function entriesToCsv(entries) {
-  const header = ['id', 'date', 'type', 'name', 'selections_json', 'comment'];
+  const header = ['id', 'date', 'type', 'name', 'selections_json', 'comment', 'correct_counts_json', 'correct_answers_json'];
   const rows = entries.map(e => [
-    e.id, e.date, e.type, e.name, JSON.stringify(e.selections), e.comment || ''
+    e.id, e.date, e.type, e.name, JSON.stringify(e.selections), e.comment || '',
+    JSON.stringify(e.correctCounts || {}), JSON.stringify(e.correctAnswers || {})
   ].map(csvEscape).join(','));
   return header.join(',') + '\n' + rows.join('\n');
 }
@@ -547,6 +548,8 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
     const nameIdx = header.indexOf('name');
     const selIdx = header.indexOf('selections_json');
     const commentIdx = header.indexOf('comment');
+    const correctCountsIdx = header.indexOf('correct_counts_json');
+    const correctAnswersIdx = header.indexOf('correct_answers_json');
     const listRes = await window.storage.get('entry_ids').catch(() => null);
     let ids = listRes ? JSON.parse(listRes.value) : [];
     let added = 0;
@@ -556,10 +559,15 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
       let id = r[idIdx] || ('entry_' + Date.now() + '_' + i);
       let selections = {};
       try { selections = JSON.parse(r[selIdx] || '{}'); } catch (e) { selections = {}; }
+      let correctCounts = {};
+      try { correctCounts = JSON.parse((correctCountsIdx >= 0 && r[correctCountsIdx]) || '{}'); } catch (e) { correctCounts = {}; }
+      let correctAnswers = {};
+      try { correctAnswers = JSON.parse((correctAnswersIdx >= 0 && r[correctAnswersIdx]) || '{}'); } catch (e) { correctAnswers = {}; }
       const entry = {
         id, type: r[typeIdx] || 'white', name: r[nameIdx] || '(タイトル未入力)',
         date: r[dateIdx] || new Date().toISOString(), selections,
-        comment: (commentIdx >= 0 && r[commentIdx]) || ''
+        comment: (commentIdx >= 0 && r[commentIdx]) || '',
+        correctCounts, correctAnswers
       };
       await window.storage.set(entry.id, JSON.stringify(entry));
       if (ids.indexOf(entry.id) === -1) { ids.unshift(entry.id); added++; }
