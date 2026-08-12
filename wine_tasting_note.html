@@ -143,8 +143,6 @@
   .entry-detail .card { padding: 12px; margin-bottom: 8px; }
   .entry-detail .card h2 { font-size: 12px; }
   .entry-detail .term-group { padding: 10px; margin-bottom: 10px; }
-  .entry-detail .chip { cursor: default; }
-  .entry-detail .chip:not(.selected) { opacity: 0.4; }
   .entry-body span.tag {
     display: inline-block; background: var(--accent-light); color: var(--accent);
     border-radius: 999px; padding: 2px 9px; margin: 2px 3px 2px 0; font-size: 12px; font-weight: 600;
@@ -552,6 +550,143 @@ async function saveEntry() {
 }
 document.getElementById('saveBtn').addEventListener('click', saveEntry);
 
+function emptySelections(type) {
+  const terms = TERMS[type] || TERMS.white;
+  const sel = {};
+  Object.keys(terms).forEach(k => sel[k] = []);
+  return sel;
+}
+
+function makeEditSelections(entry) {
+  const terms = TERMS[entry.type] || TERMS.white;
+  const sel = {};
+  Object.keys(terms).forEach(k => {
+    sel[k] = (entry.selections && entry.selections[k]) ? entry.selections[k].slice() : [];
+  });
+  return sel;
+}
+
+function buildEditableTermCard(key, def, editSelections) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const hintText = def.type === 'multi' ? '（複数選択可）' : '';
+  card.innerHTML = `<h2>${key}<span class="hint">${hintText}</span></h2>
+    <div class="chips" data-key="${key}">
+      ${def.opts.map(o => `<div class="chip${editSelections[key].indexOf(o) >= 0 ? ' selected' : ''}" data-val="${htmlEscape(o)}">${o}</div>`).join('')}
+    </div>`;
+  return card;
+}
+
+function renderEditTermSections(type, editSelections) {
+  const container = document.createElement('div');
+  const terms = TERMS[type] || TERMS.white;
+  const keyToGroup = new Map();
+  (SECTION_GROUPS[type] || SECTION_GROUPS.white).forEach(group => {
+    group.keys.forEach(key => { if (terms[key]) keyToGroup.set(key, group); });
+  });
+  const renderedGroups = new Set();
+  Object.keys(terms).forEach(key => {
+    const group = keyToGroup.get(key);
+    if (!group) { container.appendChild(buildEditableTermCard(key, terms[key], editSelections)); return; }
+    if (renderedGroups.has(group)) return;
+    renderedGroups.add(group);
+    const groupEl = document.createElement('div');
+    groupEl.className = `term-group term-group--${group.cls}`;
+    const title = document.createElement('div');
+    title.className = 'term-group-title';
+    title.textContent = group.title;
+    groupEl.appendChild(title);
+    group.keys.forEach(k => { if (terms[k]) groupEl.appendChild(buildEditableTermCard(k, terms[k], editSelections)); });
+    container.appendChild(groupEl);
+  });
+  container.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const key = chip.parentElement.getAttribute('data-key');
+      const val = chip.getAttribute('data-val');
+      const def = terms[key];
+      if (def.type === 'single') {
+        editSelections[key] = editSelections[key][0] === val ? [] : [val];
+        chip.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+        if (editSelections[key].length) chip.classList.add('selected');
+      } else {
+        const idx = editSelections[key].indexOf(val);
+        if (idx >= 0) { editSelections[key].splice(idx, 1); chip.classList.remove('selected'); }
+        else { editSelections[key].push(val); chip.classList.add('selected'); }
+      }
+    });
+  });
+  return container;
+}
+
+function buildEditForm(entry) {
+  const state = { type: entry.type, selections: makeEditSelections(entry) };
+  const wrap = document.createElement('div');
+  wrap.className = 'edit-form';
+
+  const infoCard = document.createElement('div');
+  infoCard.className = 'card';
+  infoCard.innerHTML = `
+    <div class="field">
+      <label>タイプ</label>
+      <div class="type-toggle">
+        <button type="button" class="edit-type-btn${state.type === 'white' ? ' active' : ''}" data-type="white">白ワイン</button>
+        <button type="button" class="edit-type-btn${state.type === 'red' ? ' active' : ''}" data-type="red">赤ワイン</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>タイトル</label>
+      <input type="text" class="edit-name" value="${htmlEscape(entry.name)}">
+    </div>`;
+  wrap.appendChild(infoCard);
+
+  const sectionsHost = document.createElement('div');
+  sectionsHost.appendChild(renderEditTermSections(state.type, state.selections));
+  wrap.appendChild(sectionsHost);
+
+  const commentCard = document.createElement('div');
+  commentCard.className = 'card';
+  commentCard.innerHTML = `<div class="field"><label>コメント</label><textarea class="edit-comment" rows="4">${htmlEscape(entry.comment || '')}</textarea></div>`;
+  wrap.appendChild(commentCard);
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex; gap:8px; margin-top:10px;';
+  btnRow.innerHTML = `
+    <button type="button" class="action-btn edit-save-btn" style="margin:0;">更新</button>
+    <button type="button" class="action-btn edit-cancel-btn" style="margin:0; background:var(--surface-1); color:var(--text-primary); border:1.5px solid var(--border-strong); box-shadow:none;">キャンセル</button>`;
+  wrap.appendChild(btnRow);
+
+  infoCard.querySelectorAll('.edit-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newType = btn.getAttribute('data-type');
+      if (newType === state.type) return;
+      state.type = newType;
+      state.selections = emptySelections(newType);
+      infoCard.querySelectorAll('.edit-type-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-type') === newType));
+      sectionsHost.innerHTML = '';
+      sectionsHost.appendChild(renderEditTermSections(state.type, state.selections));
+    });
+  });
+
+  btnRow.querySelector('.edit-save-btn').addEventListener('click', async () => {
+    const name = infoCard.querySelector('.edit-name').value.trim();
+    const comment = commentCard.querySelector('.edit-comment').value.trim();
+    const updated = {
+      ...entry,
+      type: state.type,
+      name: name || '(タイトル未入力)',
+      selections: state.selections,
+      comment
+    };
+    await window.storage.set(updated.id, JSON.stringify(updated));
+    loadEntries();
+  });
+  btnRow.querySelector('.edit-cancel-btn').addEventListener('click', () => {
+    loadEntries();
+  });
+
+  return wrap;
+}
+
 async function loadEntries() {
   const listEl = document.getElementById('entryList');
   listEl.innerHTML = '<div class="empty">読み込み中...</div>';
@@ -571,36 +706,10 @@ async function loadEntries() {
       const div = document.createElement('div');
       div.className = 'entry';
       const dateStr = new Date(entry.date).toLocaleString('ja-JP');
-      const typeLabel = entry.type === 'white' ? '白' : '赤';
-      const terms = TERMS[entry.type] || TERMS.white;
-      const buildDetailCard = (key) => {
-        const def = terms[key];
-        const selected = (entry.selections && entry.selections[key]) || [];
-        const chips = def.opts.map(o =>
-          `<div class="chip${selected.indexOf(o) >= 0 ? ' selected' : ''}">${o}</div>`
-        ).join('');
-        return `<div class="card"><h2>${key}</h2><div class="chips">${chips}</div></div>`;
-      };
-      const keyToGroup = new Map();
-      (SECTION_GROUPS[entry.type] || SECTION_GROUPS.white).forEach(group => {
-        group.keys.forEach(key => { if (terms[key]) keyToGroup.set(key, group); });
-      });
-      const renderedGroups = new Set();
-      const detailHtml = Object.keys(terms).map(key => {
-        const group = keyToGroup.get(key);
-        if (!group) return buildDetailCard(key);
-        if (renderedGroups.has(group)) return '';
-        renderedGroups.add(group);
-        const cardsHtml = group.keys.filter(k => terms[k]).map(buildDetailCard).join('');
-        return `<div class="term-group term-group--${group.cls}"><div class="term-group-title">${group.title}</div>${cardsHtml}</div>`;
-      }).join('');
-      const commentHtml = entry.comment
-        ? `<div class="card"><h2>コメント</h2><div style="font-size:14px; white-space:pre-wrap;">${htmlEscape(entry.comment)}</div></div>`
-        : '';
       div.innerHTML = `
         <div class="entry-row" data-id="${entry.id}">
           <div>
-            <div class="entry-title">${entry.name}</div>
+            <div class="entry-title">${htmlEscape(entry.name)}</div>
             <div class="entry-date">${dateStr}</div>
           </div>
           <div class="entry-row-right">
@@ -608,11 +717,8 @@ async function loadEntries() {
             <span class="entry-chevron">▶</span>
           </div>
         </div>
-        <div class="entry-detail">
-          <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">タイプ：${typeLabel}ワイン</div>
-          ${detailHtml}
-          ${commentHtml}
-        </div>`;
+        <div class="entry-detail"></div>`;
+      div.querySelector('.entry-detail').appendChild(buildEditForm(entry));
       listEl.appendChild(div);
     }
     listEl.querySelectorAll('.entry-row').forEach(row => {
