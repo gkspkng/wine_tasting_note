@@ -284,6 +284,27 @@ const SECTION_GROUPS = {
   ]
 };
 
+const SCORE_CONFIG = {
+  appearance: { label: "外　観", multiplier: 2, items: 8, maxPoints: 16 },
+  aroma: { label: "香　り", multiplier: 2, items: 12, maxPoints: 24 },
+  palate: { label: "味わい", multiplier: 2.3, items: 7, maxPoints: 16.1 },
+  drink: { label: "評　価", multiplier: 3, items: 4, maxPoints: 12 }
+};
+
+function formatPoints(n) {
+  const rounded = Math.round(n * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function scoreOutputHtml(scores) {
+  return Object.keys(SCORE_CONFIG).map(key => {
+    const cfg = SCORE_CONFIG[key];
+    const n = Number(scores[key]) || 0;
+    const total = formatPoints(n * cfg.multiplier);
+    return `${cfg.label}：${n}×${cfg.multiplier.toFixed(1)}＝${total}点<span style="color:var(--text-secondary); font-weight:400;">（${cfg.items}項目・満点${formatPoints(cfg.maxPoints)}点）</span>`;
+  }).join('<br>');
+}
+
 let currentType = "white";
 let selections = {};
 
@@ -566,6 +587,13 @@ function makeEditSelections(entry) {
   return sel;
 }
 
+function makeEditScores(entry) {
+  const s = entry.scores || {};
+  const scores = {};
+  Object.keys(SCORE_CONFIG).forEach(key => { scores[key] = Number(s[key]) || 0; });
+  return scores;
+}
+
 function buildEditableTermCard(key, def, editSelections) {
   const card = document.createElement('div');
   card.className = 'card';
@@ -577,7 +605,7 @@ function buildEditableTermCard(key, def, editSelections) {
   return card;
 }
 
-function renderEditTermSections(type, editSelections) {
+function renderEditTermSections(type, editSelections, editScores, onScoreChange) {
   const container = document.createElement('div');
   const terms = TERMS[type] || TERMS.white;
   const keyToGroup = new Map();
@@ -597,6 +625,19 @@ function renderEditTermSections(type, editSelections) {
     title.textContent = group.title;
     groupEl.appendChild(title);
     group.keys.forEach(k => { if (terms[k]) groupEl.appendChild(buildEditableTermCard(k, terms[k], editSelections)); });
+    const scoreCfg = SCORE_CONFIG[group.cls];
+    if (scoreCfg) {
+      const scoreField = document.createElement('div');
+      scoreField.style.cssText = 'display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:10px;';
+      scoreField.innerHTML = `<label style="margin:0; white-space:nowrap;">正解数<span class="hint">（${scoreCfg.items}項目中）</span></label>
+        <input type="number" class="score-input" inputmode="numeric" min="0" max="${scoreCfg.items}" step="1" value="${editScores[group.cls]}" style="width:64px; flex:none; background:#fff;">`;
+      const scoreInput = scoreField.querySelector('.score-input');
+      scoreInput.addEventListener('input', () => {
+        editScores[group.cls] = Number(scoreInput.value) || 0;
+        if (onScoreChange) onScoreChange();
+      });
+      groupEl.appendChild(scoreField);
+    }
     container.appendChild(groupEl);
   });
   container.querySelectorAll('.chip').forEach(chip => {
@@ -619,7 +660,7 @@ function renderEditTermSections(type, editSelections) {
 }
 
 function buildEditForm(entry) {
-  const state = { type: entry.type, selections: makeEditSelections(entry) };
+  const state = { type: entry.type, selections: makeEditSelections(entry), scores: makeEditScores(entry) };
   const wrap = document.createElement('div');
   wrap.className = 'edit-form';
 
@@ -640,13 +681,25 @@ function buildEditForm(entry) {
   wrap.appendChild(infoCard);
 
   const sectionsHost = document.createElement('div');
-  sectionsHost.appendChild(renderEditTermSections(state.type, state.selections));
   wrap.appendChild(sectionsHost);
 
   const commentCard = document.createElement('div');
   commentCard.className = 'card';
-  commentCard.innerHTML = `<div class="field"><label>コメント</label><textarea class="edit-comment" rows="4">${htmlEscape(entry.comment || '')}</textarea></div>`;
+  commentCard.innerHTML = `<div class="field"><label>コメント</label><textarea class="edit-comment" rows="4" style="background:#fff;">${htmlEscape(entry.comment || '')}</textarea></div>`;
   wrap.appendChild(commentCard);
+
+  const scoreCard = document.createElement('div');
+  scoreCard.className = 'card';
+  scoreCard.innerHTML = `<h2>点数</h2>
+    <div class="score-output" style="font-size:14px; font-weight:700; line-height:1.8;"></div>`;
+  wrap.appendChild(scoreCard);
+  const scoreOutputEl = scoreCard.querySelector('.score-output');
+  function updateScoreOutput() {
+    scoreOutputEl.innerHTML = scoreOutputHtml(state.scores);
+  }
+
+  sectionsHost.appendChild(renderEditTermSections(state.type, state.selections, state.scores, updateScoreOutput));
+  updateScoreOutput();
 
   const btnRow = document.createElement('div');
   btnRow.style.cssText = 'display:flex; gap:8px; margin-top:10px;';
@@ -663,7 +716,7 @@ function buildEditForm(entry) {
       state.selections = emptySelections(newType);
       infoCard.querySelectorAll('.edit-type-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-type') === newType));
       sectionsHost.innerHTML = '';
-      sectionsHost.appendChild(renderEditTermSections(state.type, state.selections));
+      sectionsHost.appendChild(renderEditTermSections(state.type, state.selections, state.scores, updateScoreOutput));
     });
   });
 
@@ -675,6 +728,7 @@ function buildEditForm(entry) {
       type: state.type,
       name: name || '(タイトル未入力)',
       selections: state.selections,
+      scores: state.scores,
       comment
     };
     await window.storage.set(updated.id, JSON.stringify(updated));
