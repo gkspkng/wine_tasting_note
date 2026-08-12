@@ -877,13 +877,75 @@ function buildEditForm(entry) {
       comment
     };
     await window.storage.set(updated.id, JSON.stringify(updated));
-    loadEntries();
+    refreshEntry(updated.id);
   });
   btnRow.querySelector('.edit-cancel-btn').addEventListener('click', () => {
-    loadEntries();
+    refreshEntry(entry.id);
   });
 
   return wrap;
+}
+
+function buildEntryElement(entry) {
+  const div = document.createElement('div');
+  div.className = 'entry';
+  div.dataset.id = entry.id;
+  const dateStr = new Date(entry.date).toLocaleString('ja-JP');
+  div.innerHTML = `
+    <div class="entry-row">
+      <div>
+        <div class="entry-title">${htmlEscape(entry.name)}</div>
+        <div class="entry-date">${dateStr}</div>
+      </div>
+      <div class="entry-row-right">
+        <button class="del-icon-btn" aria-label="削除" title="削除">🗑</button>
+        <span class="entry-chevron">▶</span>
+      </div>
+    </div>
+    <div class="entry-detail"></div>`;
+  div.querySelector('.entry-detail').appendChild(buildEditForm(entry));
+
+  div.querySelector('.entry-row').addEventListener('click', () => {
+    const wasOpen = div.classList.contains('open');
+    document.querySelectorAll('#entryList .entry.open').forEach(e => e.classList.remove('open'));
+    if (!wasOpen) {
+      div.classList.add('open');
+      div.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+
+  div.querySelector('.del-icon-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!confirm('この記録を削除しますか？')) return;
+    try {
+      const listRes = await window.storage.get('entry_ids').catch(() => null);
+      let ids2 = listRes ? JSON.parse(listRes.value) : [];
+      ids2 = ids2.filter(x => x !== entry.id);
+      await window.storage.set('entry_ids', JSON.stringify(ids2));
+      await window.storage.delete(entry.id).catch(() => {});
+      div.remove();
+      const listEl = document.getElementById('entryList');
+      if (!listEl.children.length) listEl.innerHTML = '<div class="empty">まだ記録がありません。</div>';
+    } catch (e) {}
+  });
+
+  return div;
+}
+
+async function refreshEntry(id) {
+  const listEl = document.getElementById('entryList');
+  const oldDiv = Array.from(listEl.children).find(el => el.dataset && el.dataset.id === id);
+  let entryRes;
+  try { entryRes = await window.storage.get(id); } catch (e) { entryRes = null; }
+  if (!entryRes) {
+    if (oldDiv) oldDiv.remove();
+    if (!listEl.children.length) listEl.innerHTML = '<div class="empty">まだ記録がありません。</div>';
+    return;
+  }
+  const entry = JSON.parse(entryRes.value);
+  const newDiv = buildEntryElement(entry);
+  if (oldDiv) oldDiv.replaceWith(newDiv);
+  else listEl.appendChild(newDiv);
 }
 
 async function loadEntries() {
@@ -902,44 +964,8 @@ async function loadEntries() {
       try { entryRes = await window.storage.get(id); } catch (e) { continue; }
       if (!entryRes) continue;
       const entry = JSON.parse(entryRes.value);
-      const div = document.createElement('div');
-      div.className = 'entry';
-      const dateStr = new Date(entry.date).toLocaleString('ja-JP');
-      div.innerHTML = `
-        <div class="entry-row" data-id="${entry.id}">
-          <div>
-            <div class="entry-title">${htmlEscape(entry.name)}</div>
-            <div class="entry-date">${dateStr}</div>
-          </div>
-          <div class="entry-row-right">
-            <button class="del-icon-btn" data-id="${entry.id}" aria-label="削除" title="削除">🗑</button>
-            <span class="entry-chevron">▶</span>
-          </div>
-        </div>
-        <div class="entry-detail"></div>`;
-      div.querySelector('.entry-detail').appendChild(buildEditForm(entry));
-      listEl.appendChild(div);
+      listEl.appendChild(buildEntryElement(entry));
     }
-    listEl.querySelectorAll('.entry-row').forEach(row => {
-      row.addEventListener('click', () => {
-        row.closest('.entry').classList.toggle('open');
-      });
-    });
-    listEl.querySelectorAll('.del-icon-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute('data-id');
-        if (!confirm('この記録を削除しますか？')) return;
-        try {
-          const listRes = await window.storage.get('entry_ids').catch(() => null);
-          let ids2 = listRes ? JSON.parse(listRes.value) : [];
-          ids2 = ids2.filter(x => x !== id);
-          await window.storage.set('entry_ids', JSON.stringify(ids2));
-          await window.storage.delete(id).catch(() => {});
-          loadEntries();
-        } catch (e) {}
-      });
-    });
   } catch (e) {
     listEl.innerHTML = '<div class="empty">読み込みに失敗しました。</div>';
   }
