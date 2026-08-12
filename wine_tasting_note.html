@@ -310,7 +310,7 @@ function categoryPointsList(correctCounts) {
 
 function scoreOutputHtml(correctCounts) {
   return categoryPointsList(correctCounts).map(({ cfg, n, points }) =>
-    `${cfg.label}：${n}×${cfg.multiplier.toFixed(1)}＝${formatPoints(points)}点<span style="color:var(--text-secondary); font-weight:400;">（${cfg.items}項目・満点${formatPoints(cfg.maxPoints)}点）</span>`
+    `${cfg.label}：${n}×${cfg.multiplier.toFixed(1)}＝${formatPoints(points)}点 <span style="color:var(--text-secondary); font-weight:400;">（${cfg.items}項目・満点${formatPoints(cfg.maxPoints)}点）</span>`
   ).join('<br>');
 }
 
@@ -334,7 +334,7 @@ function answerPointsList(correctAnswers) {
 
 function answerOutputHtml(correctAnswers) {
   return answerPointsList(correctAnswers).map(({ cfg, ok, points }) =>
-    `${cfg.label}：${ok ? '正解' : '不正解'}＝${points}点<span style="color:var(--text-secondary); font-weight:400;">(1項目・満点${formatPoints(cfg.points)}点)</span>`
+    `${cfg.label}：${ok ? '正解' : '不正解'}＝${points}点 <span style="color:var(--text-secondary); font-weight:400;">（1項目・満点${formatPoints(cfg.points)}点）</span>`
   ).join('<br>');
 }
 
@@ -651,12 +651,12 @@ function makeEditCorrectAnswers(entry) {
 
 function buildAnswerField(answerKey, editCorrectAnswers, radioName, onChange) {
   const field = document.createElement('div');
-  field.style.cssText = 'display:flex; justify-content:flex-end; gap:16px; margin:-6px 0 14px;';
+  field.style.cssText = 'display:flex; justify-content:flex-end; gap:16px; margin:-2px 0 14px;';
   field.innerHTML = `
-    <label style="display:flex; align-items:center; gap:5px; font-size:13px; font-weight:500; cursor:pointer;">
+    <label style="display:flex; align-items:center; gap:5px; font-size:14px; font-weight:500; cursor:pointer;">
       <input type="radio" name="${radioName}" value="correct"${editCorrectAnswers[answerKey] ? ' checked' : ''}> 正解
     </label>
-    <label style="display:flex; align-items:center; gap:5px; font-size:13px; font-weight:500; cursor:pointer;">
+    <label style="display:flex; align-items:center; gap:5px; font-size:14px; font-weight:500; cursor:pointer;">
       <input type="radio" name="${radioName}" value="incorrect"${editCorrectAnswers[answerKey] ? '' : ' checked'}> 不正解
     </label>`;
   field.querySelectorAll('input[type=radio]').forEach(radio => {
@@ -710,7 +710,7 @@ function renderEditTermSections(type, editSelections, editCorrectCounts, editCor
     if (scoreCfg) {
       const scoreField = document.createElement('div');
       scoreField.style.cssText = 'display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:10px;';
-      scoreField.innerHTML = `<label style="margin:0; white-space:nowrap;">正解数<span class="hint">（${scoreCfg.items}項目中）</span></label>
+      scoreField.innerHTML = `<label style="margin:0; white-space:nowrap; font-size:14px; font-weight:500;">正解数 <span class="hint" style="font-size:14px; font-weight:400; color:var(--text-secondary);">（${scoreCfg.items}項目中）</span></label>
         <input type="number" class="score-input" inputmode="numeric" min="0" max="${scoreCfg.items}" step="1" value="${editCorrectCounts[group.cls]}" style="width:64px; flex:none; background:#fff;">`;
       const scoreInput = scoreField.querySelector('.score-input');
       scoreInput.addEventListener('input', () => {
