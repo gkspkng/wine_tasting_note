@@ -119,8 +119,8 @@
     box-shadow: 0 3px 10px rgba(211,120,90,0.32); font-weight: 700;
   }
   .chip.answer-mark { outline: 3px solid var(--accent); outline-offset: 1px; }
-  .score-input { color: var(--accent); font-weight: 700; text-align: center; }
-  .score-input:disabled { opacity: 1; background: var(--surface-1); color: var(--accent); -webkit-text-fill-color: var(--accent); }
+  input.score-input { color: var(--accent); font-weight: 700; text-align: center; font-size: 18px; padding: 7px 4px; }
+  input.score-input:disabled { opacity: 1; background: var(--surface-1); color: var(--accent); -webkit-text-fill-color: var(--accent); }
   .save-btn, .action-btn {
     width: 100%; padding: 14px; border-radius: 999px; border: none;
     background: linear-gradient(135deg, #e18b6b, var(--accent));
@@ -819,7 +819,7 @@ function renderEditTermSections(type, editSelections, editCorrectCounts, editCor
       const scoreField = document.createElement('div');
       scoreField.style.cssText = 'display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:10px;';
       scoreField.innerHTML = `<label style="margin:0; white-space:nowrap; font-size:14px; font-weight:500;">正解数 <span class="hint" style="font-size:14px; font-weight:400; color:var(--text-secondary);">（${scoreCfg.items}項目中）</span></label>
-        <input type="number" class="score-input" inputmode="numeric" min="0" max="${scoreCfg.items}" step="1" value="${editCorrectCounts[group.cls]}" style="width:64px; flex:none; background:#fff;">`;
+        <input type="number" class="score-input" inputmode="numeric" min="0" max="${scoreCfg.items}" step="1" value="${editCorrectCounts[group.cls]}" style="width:72px; flex:none; background:#fff;">`;
       const scoreInput = scoreField.querySelector('.score-input');
       scoreInput.addEventListener('input', () => {
         let n = Number(scoreInput.value) || 0;
@@ -894,7 +894,7 @@ function renderAnswerTermSections(type, selections, answerSelections, correctCou
       const scoreField = document.createElement('div');
       scoreField.style.cssText = 'display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:10px;';
       scoreField.innerHTML = `<label style="margin:0; white-space:nowrap; font-size:14px; font-weight:500;">正解数 <span class="hint" style="font-size:14px; font-weight:400; color:var(--text-secondary);">（${scoreCfg.items}項目中）</span></label>
-        <input type="number" class="score-input" data-group="${group.cls}" inputmode="numeric" value="${correctCounts[group.cls]}" style="width:64px; flex:none;" disabled>`;
+        <input type="number" class="score-input" data-group="${group.cls}" inputmode="numeric" value="${correctCounts[group.cls]}" style="width:72px; flex:none;" disabled>`;
       groupEl.appendChild(scoreField);
     }
     container.appendChild(groupEl);
