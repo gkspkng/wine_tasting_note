@@ -118,6 +118,8 @@
     background: linear-gradient(135deg, #e18b6b, var(--accent)); color: #fff; border-color: var(--accent);
     box-shadow: 0 3px 10px rgba(211,120,90,0.32); font-weight: 700;
   }
+  .chip.answer-mark { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .score-input:disabled { opacity: 0.6; background: var(--surface-1); }
   .save-btn, .action-btn {
     width: 100%; padding: 14px; border-radius: 999px; border: none;
     background: linear-gradient(135deg, #e18b6b, var(--accent));
@@ -412,6 +414,33 @@ function scoreTotalHtml(correctCounts, correctAnswers) {
   </div>`;
 }
 
+function computeAutoCorrectCounts(type, selections, answerSelections) {
+  const counts = {};
+  Object.keys(SCORE_CONFIG).forEach(g => counts[g] = 0);
+  (SECTION_GROUPS[type] || SECTION_GROUPS.white).forEach(group => {
+    if (!SCORE_CONFIG[group.cls]) return;
+    let n = 0;
+    group.keys.forEach(key => {
+      const sel = selections[key] || [];
+      const ans = answerSelections[key] || [];
+      n += sel.filter(v => ans.indexOf(v) >= 0).length;
+    });
+    counts[group.cls] = Math.min(SCORE_CONFIG[group.cls].items, n);
+  });
+  return counts;
+}
+
+function computeAutoCorrectAnswers(selections, answerSelections) {
+  const result = {};
+  Object.keys(ANSWER_CONFIG).forEach(key => {
+    const termKey = ANSWER_CONFIG[key].termKey;
+    const sel = selections[termKey] || [];
+    const ans = answerSelections[termKey] || [];
+    result[key] = sel.some(v => ans.indexOf(v) >= 0);
+  });
+  return result;
+}
+
 let currentType = "white";
 let selections = {};
 
@@ -547,10 +576,10 @@ function csvEscape(val) {
 }
 
 function entriesToCsv(entries) {
-  const header = ['id', 'date', 'type', 'name', 'selections_json', 'comment', 'correct_counts_json', 'correct_answers_json'];
+  const header = ['id', 'date', 'type', 'name', 'selections_json', 'comment', 'correct_counts_json', 'correct_answers_json', 'answer_selections_json'];
   const rows = entries.map(e => [
     e.id, e.date, e.type, e.name, JSON.stringify(e.selections), e.comment || '',
-    JSON.stringify(e.correctCounts || {}), JSON.stringify(e.correctAnswers || {})
+    JSON.stringify(e.correctCounts || {}), JSON.stringify(e.correctAnswers || {}), JSON.stringify(e.answerSelections || {})
   ].map(csvEscape).join(','));
   return header.join(',') + '\n' + rows.join('\n');
 }
@@ -619,6 +648,7 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
     const commentIdx = header.indexOf('comment');
     const correctCountsIdx = header.indexOf('correct_counts_json');
     const correctAnswersIdx = header.indexOf('correct_answers_json');
+    const answerSelectionsIdx = header.indexOf('answer_selections_json');
     const listRes = await window.storage.get('entry_ids').catch(() => null);
     let ids = listRes ? JSON.parse(listRes.value) : [];
     let added = 0;
@@ -632,11 +662,13 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
       try { correctCounts = JSON.parse((correctCountsIdx >= 0 && r[correctCountsIdx]) || '{}'); } catch (e) { correctCounts = {}; }
       let correctAnswers = {};
       try { correctAnswers = JSON.parse((correctAnswersIdx >= 0 && r[correctAnswersIdx]) || '{}'); } catch (e) { correctAnswers = {}; }
+      let answerSelections = {};
+      try { answerSelections = JSON.parse((answerSelectionsIdx >= 0 && r[answerSelectionsIdx]) || '{}'); } catch (e) { answerSelections = {}; }
       const entry = {
         id, type: r[typeIdx] || 'white', name: r[nameIdx] || '(タイトル未入力)',
         date: r[dateIdx] || new Date().toISOString(), selections,
         comment: (commentIdx >= 0 && r[commentIdx]) || '',
-        correctCounts, correctAnswers
+        correctCounts, correctAnswers, answerSelections
       };
       await window.storage.set(entry.id, JSON.stringify(entry));
       if (ids.indexOf(entry.id) === -1) { ids.unshift(entry.id); added++; }
@@ -697,6 +729,15 @@ function makeEditSelections(entry) {
   const sel = {};
   Object.keys(terms).forEach(k => {
     sel[k] = (entry.selections && entry.selections[k]) ? entry.selections[k].slice() : [];
+  });
+  return sel;
+}
+
+function makeAnswerSelections(entry) {
+  const terms = TERMS[entry.type] || TERMS.white;
+  const sel = {};
+  Object.keys(terms).forEach(k => {
+    sel[k] = (entry.answerSelections && entry.answerSelections[k]) ? entry.answerSelections[k].slice() : [];
   });
   return sel;
 }
@@ -809,6 +850,133 @@ function renderEditTermSections(type, editSelections, editCorrectCounts, editCor
   return container;
 }
 
+function buildAnswerTermCard(key, def, selections, answerSelections) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<h2>${key}</h2>
+    <div class="chips" data-key="${key}">
+      ${def.opts.map(o => {
+        const cls = ['chip'];
+        if (selections[key].indexOf(o) >= 0) cls.push('selected');
+        if (answerSelections[key].indexOf(o) >= 0) cls.push('answer-mark');
+        return `<div class="${cls.join(' ')}" data-val="${htmlEscape(o)}">${o}</div>`;
+      }).join('')}
+    </div>`;
+  return card;
+}
+
+function renderAnswerTermSections(type, selections, answerSelections, correctCounts, onChange) {
+  const container = document.createElement('div');
+  const terms = TERMS[type] || TERMS.white;
+  const keyToGroup = new Map();
+  (SECTION_GROUPS[type] || SECTION_GROUPS.white).forEach(group => {
+    group.keys.forEach(key => { if (terms[key]) keyToGroup.set(key, group); });
+  });
+  const renderedGroups = new Set();
+  Object.keys(terms).forEach(key => {
+    const group = keyToGroup.get(key);
+    if (!group) { container.appendChild(buildAnswerTermCard(key, terms[key], selections, answerSelections)); return; }
+    if (renderedGroups.has(group)) return;
+    renderedGroups.add(group);
+    const groupEl = document.createElement('div');
+    groupEl.className = `term-group term-group--${group.cls}`;
+    const title = document.createElement('div');
+    title.className = 'term-group-title';
+    title.textContent = group.title;
+    groupEl.appendChild(title);
+    group.keys.forEach(k => {
+      if (!terms[k]) return;
+      groupEl.appendChild(buildAnswerTermCard(k, terms[k], selections, answerSelections));
+    });
+    const scoreCfg = SCORE_CONFIG[group.cls];
+    if (scoreCfg) {
+      const scoreField = document.createElement('div');
+      scoreField.style.cssText = 'display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:10px;';
+      scoreField.innerHTML = `<label style="margin:0; white-space:nowrap; font-size:14px; font-weight:500;">正解数 <span class="hint" style="font-size:14px; font-weight:400; color:var(--text-secondary);">（${scoreCfg.items}項目中）</span></label>
+        <input type="number" class="score-input" data-group="${group.cls}" inputmode="numeric" value="${correctCounts[group.cls]}" style="width:64px; flex:none;" disabled>`;
+      groupEl.appendChild(scoreField);
+    }
+    container.appendChild(groupEl);
+  });
+  container.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const key = chip.parentElement.getAttribute('data-key');
+      const val = chip.getAttribute('data-val');
+      const idx = answerSelections[key].indexOf(val);
+      if (idx >= 0) { answerSelections[key].splice(idx, 1); chip.classList.remove('answer-mark'); }
+      else { answerSelections[key].push(val); chip.classList.add('answer-mark'); }
+      if (onChange) onChange();
+    });
+  });
+  return container;
+}
+
+function buildAnswerForm(entry) {
+  const state = { answerSelections: makeAnswerSelections(entry) };
+  const wrap = document.createElement('div');
+  wrap.className = 'edit-form';
+
+  const infoCard = document.createElement('div');
+  infoCard.className = 'card';
+  infoCard.innerHTML = `
+    <div class="field">
+      <label>タイトル</label>
+      <div style="font-size:14px; font-weight:700;">${htmlEscape(entry.name)}</div>
+    </div>`;
+  wrap.appendChild(infoCard);
+
+  const sectionsHost = document.createElement('div');
+  wrap.appendChild(sectionsHost);
+
+  const scoreCard = document.createElement('div');
+  scoreCard.className = 'card score-card';
+  scoreCard.innerHTML = `<h2 class="score-title">採点結果</h2>
+    <div class="score-output"></div>`;
+  wrap.appendChild(scoreCard);
+  const scoreOutputEl = scoreCard.querySelector('.score-output');
+  function updateScoreOutput() {
+    const correctCounts = computeAutoCorrectCounts(entry.type, entry.selections || {}, state.answerSelections);
+    const correctAnswers = computeAutoCorrectAnswers(entry.selections || {}, state.answerSelections);
+    scoreOutputEl.innerHTML = scoreOutputHtml(correctCounts)
+      + answerOutputHtml(correctAnswers)
+      + scoreTotalHtml(correctCounts, correctAnswers);
+    return { correctCounts, correctAnswers };
+  }
+
+  const initialCounts = computeAutoCorrectCounts(entry.type, entry.selections || {}, state.answerSelections);
+  sectionsHost.appendChild(renderAnswerTermSections(entry.type, entry.selections || {}, state.answerSelections, initialCounts, () => {
+    const { correctCounts } = updateScoreOutput();
+    sectionsHost.querySelectorAll('.score-input').forEach(input => {
+      input.value = correctCounts[input.getAttribute('data-group')];
+    });
+  }));
+  updateScoreOutput();
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex; gap:8px; margin-top:10px;';
+  btnRow.innerHTML = `
+    <button type="button" class="action-btn answer-save-btn" style="margin:0;">保存</button>
+    <button type="button" class="action-btn answer-cancel-btn" style="margin:0; background:var(--surface-1); color:var(--text-primary); border:1.5px solid var(--border-strong); box-shadow:none;">キャンセル</button>`;
+  wrap.appendChild(btnRow);
+
+  btnRow.querySelector('.answer-save-btn').addEventListener('click', async () => {
+    const { correctCounts, correctAnswers } = updateScoreOutput();
+    const updated = {
+      ...entry,
+      answerSelections: state.answerSelections,
+      correctCounts,
+      correctAnswers
+    };
+    await window.storage.set(updated.id, JSON.stringify(updated));
+    refreshEntry(updated.id);
+  });
+  btnRow.querySelector('.answer-cancel-btn').addEventListener('click', () => {
+    refreshEntry(entry.id);
+  });
+
+  return wrap;
+}
+
 function buildEditForm(entry) {
   const state = { type: entry.type, selections: makeEditSelections(entry), correctCounts: makeEditCorrectCounts(entry), correctAnswers: makeEditCorrectAnswers(entry) };
   const wrap = document.createElement('div');
@@ -895,6 +1063,40 @@ function buildEditForm(entry) {
   return wrap;
 }
 
+function buildEntryDetail(entry) {
+  let mode = 'answer';
+  const wrap = document.createElement('div');
+
+  const modeToggle = document.createElement('div');
+  modeToggle.className = 'field';
+  modeToggle.innerHTML = `
+    <div class="type-toggle">
+      <button type="button" class="mode-btn active" data-mode="answer">正解登録</button>
+      <button type="button" class="mode-btn" data-mode="edit">編集</button>
+    </div>`;
+  wrap.appendChild(modeToggle);
+
+  const bodyHost = document.createElement('div');
+  wrap.appendChild(bodyHost);
+
+  function renderMode() {
+    bodyHost.innerHTML = '';
+    bodyHost.appendChild(mode === 'answer' ? buildAnswerForm(entry) : buildEditForm(entry));
+  }
+  modeToggle.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const m = btn.getAttribute('data-mode');
+      if (m === mode) return;
+      mode = m;
+      modeToggle.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-mode') === m));
+      renderMode();
+    });
+  });
+  renderMode();
+
+  return wrap;
+}
+
 function buildEntryElement(entry) {
   const div = document.createElement('div');
   div.className = 'entry';
@@ -920,7 +1122,7 @@ function buildEntryElement(entry) {
     document.querySelectorAll('#entryList .entry.open').forEach(e => e.classList.remove('open'));
     if (!wasOpen) {
       if (!detailBuilt) {
-        detailEl.appendChild(buildEditForm(entry));
+        detailEl.appendChild(buildEntryDetail(entry));
         detailBuilt = true;
       }
       div.classList.add('open');
