@@ -1069,12 +1069,11 @@ function buildEntryDetail(entry) {
   const wrap = document.createElement('div');
 
   const modeToggle = document.createElement('div');
-  modeToggle.className = 'field';
+  modeToggle.className = 'tabs';
+  modeToggle.style.marginBottom = '14px';
   modeToggle.innerHTML = `
-    <div class="type-toggle">
-      <button type="button" class="mode-btn active" data-mode="answer">正解登録</button>
-      <button type="button" class="mode-btn" data-mode="edit">編集</button>
-    </div>`;
+    <button type="button" class="mode-btn tab-btn active" data-mode="answer">正解登録</button>
+    <button type="button" class="mode-btn tab-btn" data-mode="edit">編集</button>`;
   wrap.appendChild(modeToggle);
 
   const bodyHost = document.createElement('div');
