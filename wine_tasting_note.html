@@ -100,6 +100,10 @@
   .field { margin-bottom: 14px; }
   .field:last-child { margin-bottom: 0; }
   .field label { display: block; font-size: 13px; margin-bottom: 8px; font-weight: 700; color: var(--text-primary); }
+  .field label.pill-label {
+    font-size: 13px; color: var(--text-secondary); font-weight: 700;
+    display: inline-block; padding: 3px 10px; background: var(--surface-1); border-radius: 999px;
+  }
   .field .hint { color: var(--text-muted); font-size: 11px; margin-left: 4px; font-weight: 400; }
   input[type=text], input[type=number], select, textarea {
     width: 100%; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--border);
@@ -172,7 +176,7 @@
   .status { font-size: 12.5px; color: var(--accent); margin-top: 8px; min-height: 16px; font-weight: 600; }
 
   .card .score-title {
-    font-family: 'Kaisei Decol', serif; font-size: 18px; font-weight: 700; letter-spacing: 0.03em;
+    font-family: 'Zen Maru Gothic', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.03em;
     color: #fff; margin: 0 0 12px; padding: 0;
     background: none; display: block; border-radius: 0;
   }
@@ -211,7 +215,7 @@
     margin-top: 14px; color: #fff;
     display: flex; justify-content: flex-end; align-items: baseline; gap: 10px;
   }
-  .score-total-label { font-family: 'Kaisei Decol', serif; font-size: 21px; font-weight: 700; letter-spacing: 0.04em; }
+  .score-total-label { font-family: 'Zen Maru Gothic', sans-serif; font-size: 21px; font-weight: 700; letter-spacing: 0.04em; }
   .score-total-value { font-size: 32px; font-weight: 700; }
   .score-total-value small { font-size: 15px; font-weight: 500; opacity: 0.85; }
 </style>
@@ -221,7 +225,7 @@
   <h1><a href="https://github.com/gkspkng/wine_tasting_note" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:none;">テイスティングノート</a><span class="wine-icon">🍷</span></h1>
   <div class="sub">
     <span>J.S.A.用語選択用紙をベースにしたデジタル記録ツール</span>
-    <span class="version">v.1.5.5</span>
+    <span class="version">v.1.5.6</span>
   </div>
 
   <div class="tabs" id="mainTabs">
@@ -232,11 +236,11 @@
   <div id="view-input" class="view active">
     <div class="card">
       <div class="field">
-        <label>タイトル</label>
-        <input type="text" id="wineName" placeholder="例：第1回ブラインド No.1">
+        <label class="pill-label">タイトル</label>
+        <input type="text" id="wineName" placeholder="例：第1回ブラインド No.1" style="background:#fff;">
       </div>
       <div class="field">
-        <label>タイプ</label>
+        <label class="pill-label">タイプ</label>
         <div class="type-toggle">
           <button id="type-white" class="active">白ワイン</button>
           <button id="type-red">赤ワイン</button>
@@ -249,7 +253,7 @@
     <div class="card">
       <div class="field">
         <label>コメント</label>
-        <textarea id="comment" rows="4" placeholder=""></textarea>
+        <textarea id="comment" rows="4" placeholder="" style="background:#fff;"></textarea>
       </div>
     </div>
 
@@ -930,13 +934,18 @@ function buildAnswerForm(entry) {
   infoCard.className = 'card';
   infoCard.innerHTML = `
     <div class="field">
-      <label>タイトル</label>
+      <label class="pill-label">タイトル</label>
       <div style="font-size:14px; font-weight:700;">${htmlEscape(entry.name)}</div>
     </div>`;
   wrap.appendChild(infoCard);
 
   const sectionsHost = document.createElement('div');
   wrap.appendChild(sectionsHost);
+
+  const commentCard = document.createElement('div');
+  commentCard.className = 'card';
+  commentCard.innerHTML = `<div class="field"><label>コメント</label><textarea class="answer-comment" rows="4" style="background:#fff;">${htmlEscape(entry.comment || '')}</textarea></div>`;
+  wrap.appendChild(commentCard);
 
   const scoreCard = document.createElement('div');
   scoreCard.className = 'card score-card';
@@ -989,11 +998,13 @@ function buildAnswerForm(entry) {
 
   btnRow.querySelector('.answer-save-btn').addEventListener('click', async () => {
     const { correctCounts, correctAnswers } = updateScoreOutput();
+    const comment = commentCard.querySelector('.answer-comment').value.trim();
     const updated = {
       ...entry,
       answerSelections: state.answerSelections,
       correctCounts,
-      correctAnswers
+      correctAnswers,
+      comment
     };
     await window.storage.set(updated.id, JSON.stringify(updated));
     closeEntryDetail(updated.id);
@@ -1014,11 +1025,11 @@ function buildEditForm(entry) {
   infoCard.className = 'card';
   infoCard.innerHTML = `
     <div class="field">
-      <label>タイトル</label>
-      <input type="text" class="edit-name" value="${htmlEscape(entry.name)}">
+      <label class="pill-label">タイトル</label>
+      <input type="text" class="edit-name" value="${htmlEscape(entry.name)}" style="background:#fff;">
     </div>
     <div class="field">
-      <label>タイプ</label>
+      <label class="pill-label">タイプ</label>
       <div class="type-toggle">
         <button type="button" class="edit-type-btn${state.type === 'white' ? ' active' : ''}" data-type="white">白ワイン</button>
         <button type="button" class="edit-type-btn${state.type === 'red' ? ' active' : ''}" data-type="red">赤ワイン</button>
