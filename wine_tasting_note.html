@@ -223,7 +223,7 @@
   <h1><a href="https://github.com/gkspkng/wine_tasting_note" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:none;">テイスティングノート</a><span class="wine-icon">🍷</span></h1>
   <div class="sub">
     <span>J.S.A.用語選択用紙をベースにしたデジタル記録ツール</span>
-    <span class="version">v.1.4.1</span>
+    <span class="version">v.1.4.2</span>
   </div>
 
   <div class="tabs">
@@ -906,14 +906,20 @@ function renderAnswerTermSections(type, selections, answerSelections, correctCou
       const idx = answerSelections[key].indexOf(val);
       if (idx >= 0) { answerSelections[key].splice(idx, 1); chip.classList.remove('answer-mark'); }
       else { answerSelections[key].push(val); chip.classList.add('answer-mark'); }
-      if (onChange) onChange();
+      if (onChange) onChange(key);
     });
   });
   return container;
 }
 
+function groupClsForKey(type, key) {
+  const groups = SECTION_GROUPS[type] || SECTION_GROUPS.white;
+  const group = groups.find(g => g.keys.indexOf(key) >= 0);
+  return group ? group.cls : null;
+}
+
 function buildAnswerForm(entry) {
-  const state = { answerSelections: makeAnswerSelections(entry) };
+  const state = { answerSelections: makeAnswerSelections(entry), liveGroups: new Set(), liveAnswerKeys: new Set() };
   const wrap = document.createElement('div');
   wrap.className = 'edit-form';
 
@@ -935,17 +941,35 @@ function buildAnswerForm(entry) {
     <div class="score-output"></div>`;
   wrap.appendChild(scoreCard);
   const scoreOutputEl = scoreCard.querySelector('.score-output');
+  function currentCounts() {
+    const saved = makeEditCorrectCounts(entry);
+    const computed = computeAutoCorrectCounts(entry.type, entry.selections || {}, state.answerSelections);
+    const result = {};
+    Object.keys(SCORE_CONFIG).forEach(g => { result[g] = state.liveGroups.has(g) ? computed[g] : saved[g]; });
+    return result;
+  }
+  function currentAnswers() {
+    const saved = makeEditCorrectAnswers(entry);
+    const computed = computeAutoCorrectAnswers(entry.selections || {}, state.answerSelections);
+    const result = {};
+    Object.keys(ANSWER_CONFIG).forEach(k => { result[k] = state.liveAnswerKeys.has(k) ? computed[k] : saved[k]; });
+    return result;
+  }
   function updateScoreOutput() {
-    const correctCounts = computeAutoCorrectCounts(entry.type, entry.selections || {}, state.answerSelections);
-    const correctAnswers = computeAutoCorrectAnswers(entry.selections || {}, state.answerSelections);
+    const correctCounts = currentCounts();
+    const correctAnswers = currentAnswers();
     scoreOutputEl.innerHTML = scoreOutputHtml(correctCounts)
       + answerOutputHtml(correctAnswers)
       + scoreTotalHtml(correctCounts, correctAnswers);
     return { correctCounts, correctAnswers };
   }
 
-  const initialCounts = computeAutoCorrectCounts(entry.type, entry.selections || {}, state.answerSelections);
-  sectionsHost.appendChild(renderAnswerTermSections(entry.type, entry.selections || {}, state.answerSelections, initialCounts, () => {
+  const initialCounts = currentCounts();
+  sectionsHost.appendChild(renderAnswerTermSections(entry.type, entry.selections || {}, state.answerSelections, initialCounts, (key) => {
+    const cls = groupClsForKey(entry.type, key);
+    if (cls && SCORE_CONFIG[cls]) state.liveGroups.add(cls);
+    const answerKey = ANSWER_BY_TERM_KEY[key];
+    if (answerKey) state.liveAnswerKeys.add(answerKey);
     const { correctCounts } = updateScoreOutput();
     sectionsHost.querySelectorAll('.score-input').forEach(input => {
       input.value = correctCounts[input.getAttribute('data-group')];
