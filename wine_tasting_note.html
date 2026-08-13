@@ -123,8 +123,12 @@
     box-shadow: 0 3px 10px rgba(211,120,90,0.32); font-weight: 700;
   }
   .chip.answer-mark { outline: 3px solid var(--accent); outline-offset: 1px; }
-  input.score-input { color: #000; font-weight: 700; text-align: center; font-size: 18px; padding: 7px 4px; }
-  input.score-input:disabled { opacity: 1; background: var(--surface-1); color: #000; -webkit-text-fill-color: #000; }
+  input.score-input { color: #b5651d; font-weight: 700; text-align: center; font-size: 18px; padding: 7px 4px; }
+  .score-count-display {
+    display: inline-block; width: 72px; flex: none; text-align: center;
+    font-weight: 700; font-size: 18px; padding: 7px 4px;
+    color: #b5651d; background: var(--surface-1); border-radius: 12px; border: 1.5px solid var(--border);
+  }
   .save-btn, .action-btn {
     width: 100%; padding: 14px; border-radius: 999px; border: none;
     background: linear-gradient(135deg, #e18b6b, var(--accent));
@@ -193,7 +197,7 @@
     color: var(--row-color, var(--text-primary)); display: flex; align-items: center; gap: 6px; min-width: 0;
   }
   .score-row-label::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--row-color, var(--accent)); flex-shrink: 0; }
-  .score-row-value { font-size: 16px; font-weight: 700; color: var(--text-primary); white-space: nowrap; }
+  .score-row-value { font-size: 16px; font-weight: 700; color: #b5651d; white-space: nowrap; }
   .score-row-value small { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-left: 1px; }
   .score-row-bar { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; margin-bottom: 5px; }
   .score-row-bar-fill { height: 100%; border-radius: 999px; background: var(--row-color, var(--accent)); }
@@ -204,11 +208,11 @@
     display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px;
     background: var(--group-label-bg); border-radius: 12px; padding: 9px 12px;
   }
-  .score-answer-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .score-answer-label { font-size: 13px; font-weight: 700; color: var(--group-label); }
   .score-answer-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
   .score-answer-badge.correct { background: var(--group-label); color: #fff; }
   .score-answer-badge.incorrect { background: #e4dcc9; color: var(--text-muted); }
-  .score-answer-points { font-size: 13px; font-weight: 700; color: var(--group-label); text-align: right; white-space: nowrap; }
+  .score-answer-points { font-size: 16px; font-weight: 700; color: var(--group-label); text-align: right; white-space: nowrap; }
   .score-answer-points small { font-size: 10.5px; font-weight: 500; color: var(--text-secondary); margin-left: 2px; }
 
   .score-total-box {
@@ -225,7 +229,7 @@
   <h1><a href="https://github.com/gkspkng/wine_tasting_note" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:none;">テイスティングノート</a><span class="wine-icon">🍷</span></h1>
   <div class="sub">
     <span>J.S.A.用語選択用紙をベースにしたデジタル記録ツール</span>
-    <span class="version">v.1.5.6</span>
+    <span class="version">v.1.5.7</span>
   </div>
 
   <div class="tabs" id="mainTabs">
@@ -768,10 +772,10 @@ function buildAnswerField(answerKey, editCorrectAnswers, radioName, onChange) {
   const field = document.createElement('div');
   field.style.cssText = 'display:flex; justify-content:flex-end; gap:16px; margin:-2px 0 14px;';
   field.innerHTML = `
-    <label style="display:flex; align-items:center; gap:5px; font-size:14px; font-weight:500; cursor:pointer;">
+    <label style="display:flex; align-items:center; gap:5px; font-size:14px; font-weight:500; color:var(--group-label); cursor:pointer;">
       <input type="radio" name="${radioName}" value="correct"${editCorrectAnswers[answerKey] ? ' checked' : ''}> 正解
     </label>
-    <label style="display:flex; align-items:center; gap:5px; font-size:14px; font-weight:500; cursor:pointer;">
+    <label style="display:flex; align-items:center; gap:5px; font-size:14px; font-weight:500; color:var(--group-label); cursor:pointer;">
       <input type="radio" name="${radioName}" value="incorrect"${editCorrectAnswers[answerKey] ? '' : ' checked'}> 不正解
     </label>`;
   field.querySelectorAll('input[type=radio]').forEach(radio => {
@@ -825,7 +829,7 @@ function renderEditTermSections(type, editSelections, editCorrectCounts, editCor
     if (scoreCfg) {
       const scoreField = document.createElement('div');
       scoreField.style.cssText = 'display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:10px;';
-      scoreField.innerHTML = `<label style="margin:0; white-space:nowrap; font-size:14px; font-weight:500;">正解数 <span class="hint" style="font-size:14px; font-weight:400; color:var(--text-secondary);">（${scoreCfg.items}項目中）</span></label>
+      scoreField.innerHTML = `<label style="margin:0; white-space:nowrap; font-size:15px; font-weight:500; color:var(--group-${group.cls});">正解数 <span class="hint" style="font-size:14px; font-weight:400; color:var(--group-${group.cls});">（${scoreCfg.items}項目中）</span></label>
         <input type="number" class="score-input" inputmode="numeric" min="0" max="${scoreCfg.items}" step="1" value="${editCorrectCounts[group.cls]}" style="width:72px; flex:none; background:#fff;">`;
       const scoreInput = scoreField.querySelector('.score-input');
       scoreInput.addEventListener('input', () => {
@@ -900,8 +904,8 @@ function renderAnswerTermSections(type, selections, answerSelections, correctCou
     if (scoreCfg) {
       const scoreField = document.createElement('div');
       scoreField.style.cssText = 'display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:10px;';
-      scoreField.innerHTML = `<label style="margin:0; white-space:nowrap; font-size:14px; font-weight:500;">正解数 <span class="hint" style="font-size:14px; font-weight:400; color:var(--text-secondary);">（${scoreCfg.items}項目中）</span></label>
-        <input type="number" class="score-input" data-group="${group.cls}" inputmode="numeric" value="${correctCounts[group.cls]}" style="width:72px; flex:none;" disabled>`;
+      scoreField.innerHTML = `<label style="margin:0; white-space:nowrap; font-size:15px; font-weight:500; color:var(--group-${group.cls});">正解数 <span class="hint" style="font-size:14px; font-weight:400; color:var(--group-${group.cls});">（${scoreCfg.items}項目中）</span></label>
+        <span class="score-count-display" data-group="${group.cls}">${correctCounts[group.cls]}</span>`;
       groupEl.appendChild(scoreField);
     }
     container.appendChild(groupEl);
@@ -983,8 +987,8 @@ function buildAnswerForm(entry) {
     const answerKey = ANSWER_BY_TERM_KEY[key];
     if (answerKey) state.liveAnswerKeys.add(answerKey);
     const { correctCounts } = updateScoreOutput();
-    sectionsHost.querySelectorAll('.score-input').forEach(input => {
-      input.value = correctCounts[input.getAttribute('data-group')];
+    sectionsHost.querySelectorAll('.score-count-display').forEach(el => {
+      el.textContent = correctCounts[el.getAttribute('data-group')];
     });
   }));
   updateScoreOutput();
