@@ -140,13 +140,7 @@
   .entry-row:active { background: var(--surface-1); }
   .entry-title { font-weight: 700; font-size: 15px; font-family: 'Kaisei Decol', serif; }
   .entry-date { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-  .entry-chevron { color: var(--accent); font-size: 12px; margin-left: 8px; transition: transform 0.15s; }
-  .entry.open .entry-chevron { transform: rotate(90deg); }
-  .entry-detail { display: none; padding: 0 16px 16px; border-top: 1px dashed var(--border-strong); }
-  .entry.open .entry-detail { display: block; padding-top: 12px; }
-  .entry-detail .card { padding: 12px; margin-bottom: 8px; }
-  .entry-detail .card h2 { font-size: 12px; }
-  .entry-detail .term-group { padding: 10px; margin-bottom: 10px; }
+  .entry-chevron { color: var(--accent); font-size: 12px; margin-left: 8px; }
   .entry-body span.tag {
     display: inline-block; background: var(--accent-light); color: var(--accent);
     border-radius: 999px; padding: 2px 9px; margin: 2px 3px 2px 0; font-size: 12px; font-weight: 600;
@@ -173,7 +167,7 @@
   .type-toggle button.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 10px rgba(211,120,90,0.28); }
   .status { font-size: 12.5px; color: var(--accent); margin-top: 8px; min-height: 16px; font-weight: 600; }
 
-  .card .score-title, .entry-detail .card .score-title {
+  .card .score-title {
     font-family: 'Kaisei Decol', serif; font-size: 18px; font-weight: 700; letter-spacing: 0.03em;
     color: #fff; margin: 0 0 12px; padding: 0;
     background: none; display: block; border-radius: 0;
@@ -223,10 +217,10 @@
   <h1><a href="https://github.com/gkspkng/wine_tasting_note" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:none;">テイスティングノート</a><span class="wine-icon">🍷</span></h1>
   <div class="sub">
     <span>J.S.A.用語選択用紙をベースにしたデジタル記録ツール</span>
-    <span class="version">v.1.4.2</span>
+    <span class="version">v.1.5.1</span>
   </div>
 
-  <div class="tabs">
+  <div class="tabs" id="mainTabs">
     <button class="tab-btn active" data-view="input">記録する</button>
     <button class="tab-btn" data-view="list">記録一覧</button>
   </div>
@@ -234,15 +228,15 @@
   <div id="view-input" class="view active">
     <div class="card">
       <div class="field">
+        <label>タイトル</label>
+        <input type="text" id="wineName" placeholder="例：第1回ブラインド No.1">
+      </div>
+      <div class="field">
         <label>タイプ</label>
         <div class="type-toggle">
           <button id="type-white" class="active">白ワイン</button>
           <button id="type-red">赤ワイン</button>
         </div>
-      </div>
-      <div class="field">
-        <label>タイトル</label>
-        <input type="text" id="wineName" placeholder="例：第1回ブラインド No.1">
       </div>
     </div>
 
@@ -267,6 +261,11 @@
     </div>
     <div class="status" id="importStatus"></div>
     <div id="entryList"></div>
+  </div>
+
+  <div id="view-detail" class="view">
+    <button class="util-btn" id="detailBackBtn" style="margin-bottom:14px;">← 一覧に戻る</button>
+    <div id="detailHost"></div>
   </div>
 </div>
 
@@ -993,10 +992,10 @@ function buildAnswerForm(entry) {
       correctAnswers
     };
     await window.storage.set(updated.id, JSON.stringify(updated));
-    refreshEntry(updated.id);
+    closeEntryDetail(updated.id);
   });
   btnRow.querySelector('.answer-cancel-btn').addEventListener('click', () => {
-    refreshEntry(entry.id);
+    closeEntryDetail(entry.id);
   });
 
   return wrap;
@@ -1011,15 +1010,15 @@ function buildEditForm(entry) {
   infoCard.className = 'card';
   infoCard.innerHTML = `
     <div class="field">
+      <label>タイトル</label>
+      <input type="text" class="edit-name" value="${htmlEscape(entry.name)}">
+    </div>
+    <div class="field">
       <label>タイプ</label>
       <div class="type-toggle">
         <button type="button" class="edit-type-btn${state.type === 'white' ? ' active' : ''}" data-type="white">白ワイン</button>
         <button type="button" class="edit-type-btn${state.type === 'red' ? ' active' : ''}" data-type="red">赤ワイン</button>
       </div>
-    </div>
-    <div class="field">
-      <label>タイトル</label>
-      <input type="text" class="edit-name" value="${htmlEscape(entry.name)}">
     </div>`;
   wrap.appendChild(infoCard);
 
@@ -1079,10 +1078,10 @@ function buildEditForm(entry) {
       comment
     };
     await window.storage.set(updated.id, JSON.stringify(updated));
-    refreshEntry(updated.id);
+    closeEntryDetail(updated.id);
   });
   btnRow.querySelector('.edit-cancel-btn').addEventListener('click', () => {
-    refreshEntry(entry.id);
+    closeEntryDetail(entry.id);
   });
 
   return wrap;
@@ -1121,6 +1120,27 @@ function buildEntryDetail(entry) {
   return wrap;
 }
 
+function showListView() {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-list').classList.add('active');
+  document.getElementById('mainTabs').style.display = '';
+}
+
+function showEntryDetail(entry) {
+  const host = document.getElementById('detailHost');
+  host.innerHTML = '';
+  host.appendChild(buildEntryDetail(entry));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-detail').classList.add('active');
+  document.getElementById('mainTabs').style.display = 'none';
+  window.scrollTo({ top: 0 });
+}
+
+async function closeEntryDetail(id) {
+  await refreshEntry(id);
+  showListView();
+}
+
 function buildEntryElement(entry) {
   const div = document.createElement('div');
   div.className = 'entry';
@@ -1136,22 +1156,10 @@ function buildEntryElement(entry) {
         <button class="del-icon-btn" aria-label="削除" title="削除">🗑</button>
         <span class="entry-chevron">▶</span>
       </div>
-    </div>
-    <div class="entry-detail"></div>`;
-  const detailEl = div.querySelector('.entry-detail');
-  let detailBuilt = false;
+    </div>`;
 
   div.querySelector('.entry-row').addEventListener('click', () => {
-    const wasOpen = div.classList.contains('open');
-    document.querySelectorAll('#entryList .entry.open').forEach(e => e.classList.remove('open'));
-    if (!wasOpen) {
-      if (!detailBuilt) {
-        detailEl.appendChild(buildEntryDetail(entry));
-        detailBuilt = true;
-      }
-      div.classList.add('open');
-      div.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    showEntryDetail(entry);
   });
 
   div.querySelector('.del-icon-btn').addEventListener('click', async (e) => {
@@ -1210,6 +1218,10 @@ async function loadEntries() {
     listEl.innerHTML = '<div class="empty">読み込みに失敗しました。</div>';
   }
 }
+
+document.getElementById('detailBackBtn').addEventListener('click', () => {
+  showListView();
+});
 
 renderForm();
 </script>
