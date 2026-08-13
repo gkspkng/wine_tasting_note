@@ -221,7 +221,7 @@
   <h1><a href="https://github.com/gkspkng/wine_tasting_note" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:none;">テイスティングノート</a><span class="wine-icon">🍷</span></h1>
   <div class="sub">
     <span>J.S.A.用語選択用紙をベースにしたデジタル記録ツール</span>
-    <span class="version">v.1.5.4</span>
+    <span class="version">v.1.5.5</span>
   </div>
 
   <div class="tabs" id="mainTabs">
@@ -984,7 +984,7 @@ function buildAnswerForm(entry) {
   btnRow.style.cssText = 'display:flex; gap:8px; margin-top:10px;';
   btnRow.innerHTML = `
     <button type="button" class="action-btn answer-save-btn" style="margin:0;">保存</button>
-    <button type="button" class="action-btn answer-cancel-btn" style="margin:0; background:var(--surface-1); color:var(--text-primary); border:1.5px solid var(--border-strong); box-shadow:none;">キャンセル</button>`;
+    <button type="button" class="action-btn answer-cancel-btn" style="margin:0; background:var(--surface-1); color:var(--text-primary); border:1.5px solid var(--border-strong); box-shadow:none;">一覧に戻る</button>`;
   wrap.appendChild(btnRow);
 
   btnRow.querySelector('.answer-save-btn').addEventListener('click', async () => {
@@ -1053,7 +1053,7 @@ function buildEditForm(entry) {
   btnRow.style.cssText = 'display:flex; gap:8px; margin-top:10px;';
   btnRow.innerHTML = `
     <button type="button" class="action-btn edit-save-btn" style="margin:0;">更新</button>
-    <button type="button" class="action-btn edit-cancel-btn" style="margin:0; background:var(--surface-1); color:var(--text-primary); border:1.5px solid var(--border-strong); box-shadow:none;">キャンセル</button>`;
+    <button type="button" class="action-btn edit-cancel-btn" style="margin:0; background:var(--surface-1); color:var(--text-primary); border:1.5px solid var(--border-strong); box-shadow:none;">一覧に戻る</button>`;
   wrap.appendChild(btnRow);
 
   infoCard.querySelectorAll('.edit-type-btn').forEach(btn => {
