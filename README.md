@@ -5,6 +5,12 @@ J.S.A.（日本ソムリエ協会）のテイスティング用語選択用紙�
 
 インストールは不要です。教えてもらったURLを開けば、それだけで使い始められます。
 
+<p align="center">
+  <img src="doc/qr-code.png" alt="アプリへのQRコード" width="200">
+  <br>
+  <a href="https://gkspkng.github.io/wine_tasting_note/wine_tasting_note.html">https://gkspkng.github.io/wine_tasting_note/wine_tasting_note.html</a>
+</p>
+
 ## 使いはじめる
 
 1. 教えてもらったURLをブラウザ（Safari、Chromeなど）で開く。
