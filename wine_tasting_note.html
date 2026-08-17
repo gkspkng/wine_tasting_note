@@ -177,6 +177,7 @@
     transition: all 0.2s ease;
   }
   .type-toggle button.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 10px rgba(211,120,90,0.28); }
+  .type-toggle button:disabled { cursor: default; }
   .status { font-size: 12.5px; color: var(--accent); margin-top: 8px; min-height: 16px; font-weight: 600; }
 
   .card .score-title {
@@ -229,7 +230,7 @@
   <h1><a href="https://github.com/gkspkng/wine_tasting_note" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:none;">テイスティングノート</a><span class="wine-icon">🍷</span></h1>
   <div class="sub">
     <span>J.S.A.用語選択用紙をベースにしたデジタル記録ツール</span>
-    <span class="version">v.1.5.9</span>
+    <span class="version">v.1.5.10</span>
   </div>
 
   <div class="tabs" id="mainTabs">
@@ -238,6 +239,7 @@
   </div>
 
   <div id="view-input" class="view active">
+    <div class="status" id="saveStatus"></div>
     <div class="card">
       <div class="field">
         <label class="pill-label">タイトル</label>
@@ -262,7 +264,6 @@
     </div>
 
     <button class="save-btn" id="saveBtn">この内容を記録する</button>
-    <div class="status" id="saveStatus"></div>
   </div>
 
   <div id="view-list" class="view">
@@ -704,6 +705,7 @@ async function saveEntry() {
   const hasSelection = Object.values(selections).some(v => v.length > 0);
   if (!name && !hasSelection) {
     statusEl.textContent = 'ワイン名か、少なくとも1項目を入力してください。';
+    window.scrollTo({ top: 0 });
     return;
   }
   const entry = {
@@ -726,9 +728,11 @@ async function saveEntry() {
     document.getElementById('comment').value = '';
     resetSelections();
     renderForm();
+    window.scrollTo({ top: 0 });
     setTimeout(() => { statusEl.textContent = ''; }, 2000);
   } catch (e) {
     statusEl.textContent = '記録に失敗しました。';
+    window.scrollTo({ top: 0 });
   }
 }
 document.getElementById('saveBtn').addEventListener('click', saveEntry);
@@ -944,6 +948,10 @@ function buildAnswerForm(entry) {
     <div class="field">
       <label class="pill-label">タイトル</label>
       <div style="font-size:14px; font-weight:700;">${htmlEscape(entry.name)}</div>
+    </div>
+    <div class="field">
+      <label class="pill-label">タイプ</label>
+      <div class="type-toggle"><button type="button" class="active" disabled>${entry.type === 'red' ? '赤ワイン' : '白ワイン'}</button></div>
     </div>`;
   wrap.appendChild(infoCard);
 
