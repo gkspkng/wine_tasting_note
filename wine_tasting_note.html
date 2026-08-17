@@ -230,7 +230,7 @@
   <h1><a href="https://github.com/gkspkng/wine_tasting_note" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:none;">テイスティングノート</a><span class="wine-icon">🍷</span></h1>
   <div class="sub">
     <span>J.S.A.用語選択用紙をベースにしたデジタル記録ツール</span>
-    <span class="version">v.1.5.11</span>
+    <span class="version">v.1.5.12</span>
   </div>
 
   <div class="tabs" id="mainTabs">
@@ -283,6 +283,14 @@
 </div>
 
 <script>
+function harvestYearOpts() {
+  const lastYear = new Date().getFullYear() - 1;
+  const years = [];
+  for (let y = lastYear - 4; y <= lastYear; y++) years.push(String(y));
+  years.push("その他");
+  return years;
+}
+
 const TERMS = {
   white: {
     "清澄度": {type:"multi", opts:["澄んだ","やや濁った","濁った"]},
@@ -305,7 +313,7 @@ const TERMS = {
     "総合評価": {type:"multi", opts:["シンプル、フレッシュ感を楽しむ","成熟度が高く、豊かな","濃縮し、力強い","エレガントで、ミネラリー","滑らかで、バランスが良い","ポテンシャルの高い"]},
     "適正温度": {type:"multi", opts:["8度未満","8-10度","11-14度","15-18度","19度以上"]},
     "グラス": {type:"multi", opts:["小ぶり","中庸","大ぶり","バルーン型","チューリップ型"]},
-    "収穫年": {type:"multi", opts:["2021","2022","2023","2024","2025","その他"]},
+    "収穫年": {type:"multi", opts:harvestYearOpts()},
     "生産地（国）": {type:"multi", opts:["アメリカ","アルゼンチン","イタリア","オーストラリア","スペイン","チリ","ドイツ","日本","ニュージーランド","フランス","その他"]},
     "主なブドウ品種": {type:"multi", opts:["アリゴテ","アルバリーニョ","ヴィオニエ","グリューナー・ヴェルトリーナー","ゲヴュルツトラミネール","甲州","シャルドネ","シュナン・ブラン","ソーヴィニヨン・ブラン","トロンテス","ミュスカデ","リースリング","その他"]}
   },
@@ -330,7 +338,7 @@ const TERMS = {
     "総合評価": {type:"multi", opts:["シンプル、フレッシュ感を楽しむ","成熟度が高く、豊か","濃縮し、力強い","エレガントで、余韻の長い","複雑性があり、引き締まった"]},
     "適正温度": {type:"multi", opts:["10度未満","10-13度","14-16度","17-20度","21度以上"]},
     "グラス": {type:"multi", opts:["小ぶり","中庸","大ぶり","バルーン型","チューリップ型"]},
-    "収穫年": {type:"multi", opts:["2020","2021","2022","2023","2024","その他"]},
+    "収穫年": {type:"multi", opts:harvestYearOpts()},
     "生産地（国）": {type:"multi", opts:["アメリカ","アルゼンチン","イタリア","オーストラリア","スペイン","チリ","ドイツ","日本","ニュージーランド","フランス","その他"]},
     "主なブドウ品種": {type:"multi", opts:["カベルネ・ソーヴィニヨン","カルメネール","グルナッシュ","サンジョベーゼ","シラー／シラーズ","ジンファンデル","テンプラニーリョ","ネッビオーロ","ピノ・ノワール","マスカット・ベーリーA","マルベック","メルロ","その他"]}
   }
