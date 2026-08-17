@@ -246,7 +246,7 @@
         <input type="text" id="wineName" placeholder="例：第1回ブラインド No.1" style="background:#fff;">
       </div>
       <div class="field">
-        <label class="pill-label">タイプ</label>
+        <label class="pill-label">ワインの種類</label>
         <div class="type-toggle">
           <button id="type-white" class="active">白ワイン</button>
           <button id="type-red">赤ワイン</button>
@@ -950,7 +950,7 @@ function buildAnswerForm(entry) {
       <div style="font-size:14px; font-weight:700;">${htmlEscape(entry.name)}</div>
     </div>
     <div class="field">
-      <label class="pill-label">タイプ</label>
+      <label class="pill-label">ワインの種類</label>
       <div class="type-toggle"><button type="button" class="active" disabled>${entry.type === 'red' ? '赤ワイン' : '白ワイン'}</button></div>
     </div>`;
   wrap.appendChild(infoCard);
@@ -1045,7 +1045,7 @@ function buildEditForm(entry) {
       <input type="text" class="edit-name" value="${htmlEscape(entry.name)}" style="background:#fff;">
     </div>
     <div class="field">
-      <label class="pill-label">タイプ</label>
+      <label class="pill-label">ワインの種類</label>
       <div class="type-toggle">
         <button type="button" class="edit-type-btn${state.type === 'white' ? ' active' : ''}" data-type="white">白ワイン</button>
         <button type="button" class="edit-type-btn${state.type === 'red' ? ' active' : ''}" data-type="red">赤ワイン</button>
