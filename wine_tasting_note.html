@@ -229,7 +229,7 @@
   <h1><a href="https://github.com/gkspkng/wine_tasting_note" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:none;">テイスティングノート</a><span class="wine-icon">🍷</span></h1>
   <div class="sub">
     <span>J.S.A.用語選択用紙をベースにしたデジタル記録ツール</span>
-    <span class="version">v.1.5.8</span>
+    <span class="version">v.1.5.9</span>
   </div>
 
   <div class="tabs" id="mainTabs">
@@ -559,6 +559,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-' + view).classList.add('active');
     if (view === 'list') loadEntries();
+    else document.getElementById('importStatus').textContent = '';
   });
 });
 
@@ -663,7 +664,8 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
     const answerSelectionsIdx = header.indexOf('answer_selections_json');
     const listRes = await window.storage.get('entry_ids').catch(() => null);
     let ids = listRes ? JSON.parse(listRes.value) : [];
-    let added = 0;
+    let imported = 0;
+    let overwritten = 0;
     for (let i = rows.length - 1; i >= 1; i--) {
       const r = rows[i];
       if (!r || r.length < header.length) continue;
@@ -683,13 +685,15 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
         correctCounts, correctAnswers, answerSelections
       };
       await window.storage.set(entry.id, JSON.stringify(entry));
-      if (ids.indexOf(entry.id) === -1) { ids.unshift(entry.id); added++; }
+      if (ids.indexOf(entry.id) === -1) ids.unshift(entry.id);
+      else overwritten++;
+      imported++;
     }
     await window.storage.set('entry_ids', JSON.stringify(ids));
-    statusEl.textContent = `${added}件を読み込みました。`;
+    statusEl.textContent = `${imported}件をインポートしました。` + (overwritten > 0 ? `（${overwritten}件上書き）` : '');
     loadEntries();
   } catch (err) {
-    statusEl.textContent = '読み込みに失敗しました。CSVの形式を確認してください。';
+    statusEl.textContent = 'インポートに失敗しました。CSVの形式を確認してください。';
   }
   e.target.value = '';
 });
@@ -1150,6 +1154,7 @@ function showListView() {
 
 function showEntryDetail(entry) {
   listScrollY = window.scrollY;
+  document.getElementById('importStatus').textContent = '';
   const host = document.getElementById('detailHost');
   host.innerHTML = '';
   host.appendChild(buildEntryDetail(entry));
