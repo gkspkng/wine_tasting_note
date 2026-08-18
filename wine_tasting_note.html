@@ -100,6 +100,12 @@
   .field { margin-bottom: 14px; }
   .field:last-child { margin-bottom: 0; }
   .field label { display: block; font-size: 13px; margin-bottom: 8px; font-weight: 700; color: var(--text-primary); }
+  .field label.comment-label {
+    font-family: 'Kaisei Decol', serif;
+    font-size: 15px; letter-spacing: 0.04em; color: var(--accent);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .field label.comment-label::before { content: '✎'; font-size: 13px; }
   .field label.pill-label {
     font-size: 13px; color: var(--text-secondary); font-weight: 700;
     display: inline-block; padding: 3px 10px; background: var(--surface-1); border-radius: 999px;
@@ -151,7 +157,7 @@
   }
   .entry-row:active { background: var(--surface-1); }
   .entry-title { font-weight: 700; font-size: 15px; font-family: 'Kaisei Decol', serif; }
-  .entry-date { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .entry-date { font-size: 14px; line-height: 1; color: var(--text-muted); margin-top: 2px; }
   .entry-chevron { color: var(--accent); font-size: 12px; margin-left: 8px; }
   .entry-body span.tag {
     display: inline-block; background: var(--accent-light); color: var(--accent);
@@ -230,7 +236,7 @@
   <h1><a href="https://github.com/gkspkng/wine_tasting_note" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:none;">テイスティングノート</a><span class="wine-icon">🍷</span></h1>
   <div class="sub">
     <span>J.S.A.用語選択用紙をベースにしたデジタル記録ツール</span>
-    <span class="version">v.1.5.12</span>
+    <span class="version">v.1.5.13</span>
   </div>
 
   <div class="tabs" id="mainTabs">
@@ -258,7 +264,7 @@
 
     <div class="card">
       <div class="field">
-        <label>コメント</label>
+        <label class="comment-label">コメント</label>
         <textarea id="comment" rows="4" placeholder="" style="background:#fff;"></textarea>
       </div>
     </div>
@@ -968,7 +974,7 @@ function buildAnswerForm(entry) {
 
   const commentCard = document.createElement('div');
   commentCard.className = 'card';
-  commentCard.innerHTML = `<div class="field"><label>コメント</label><textarea class="answer-comment" rows="4" style="background:#fff;">${htmlEscape(entry.comment || '')}</textarea></div>`;
+  commentCard.innerHTML = `<div class="field"><label class="comment-label">コメント</label><textarea class="answer-comment" rows="4" style="background:#fff;">${htmlEscape(entry.comment || '')}</textarea></div>`;
   wrap.appendChild(commentCard);
 
   const scoreCard = document.createElement('div');
@@ -1066,7 +1072,7 @@ function buildEditForm(entry) {
 
   const commentCard = document.createElement('div');
   commentCard.className = 'card';
-  commentCard.innerHTML = `<div class="field"><label>コメント</label><textarea class="edit-comment" rows="4" style="background:#fff;">${htmlEscape(entry.comment || '')}</textarea></div>`;
+  commentCard.innerHTML = `<div class="field"><label class="comment-label">コメント</label><textarea class="edit-comment" rows="4" style="background:#fff;">${htmlEscape(entry.comment || '')}</textarea></div>`;
   wrap.appendChild(commentCard);
 
   const scoreCard = document.createElement('div');
